@@ -1,0 +1,13 @@
+http://www.webservicex.net/uszip.asmx/GetInfoByZIP?USZip=
+
+Sample Output:
+<?xml version="1.0" encoding="utf-8"?>
+<NewDataSet>
+  <Table>
+    <CITY>Butler</CITY>
+    <STATE>NJ</STATE>
+    <ZIP>07405</ZIP>
+    <AREA_CODE>973</AREA_CODE>
+    <TIME_ZONE>E</TIME_ZONE>
+  </Table>
+</NewDataSet>
