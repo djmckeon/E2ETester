@@ -1,4 +1,4 @@
-http://www.webservicex.net/uszip.asmx/GetInfoByZIP?USZip=
+http://www.webservicex.net/uszip.asmx/GetInfoByZIP?USZip=07405
 
 Sample Output:
 <?xml version="1.0" encoding="utf-8"?>
@@ -11,3 +11,26 @@ Sample Output:
     <TIME_ZONE>E</TIME_ZONE>
   </Table>
 </NewDataSet>
+
+
+
+http://dev.markitondemand.com/Api/v2/Quote?symbol=MSFT
+
+Sample Output:
+<StockQuote>
+	<Status>SUCCESS</Status>
+	<Name>Microsoft Corp</Name>
+	<Symbol>MSFT</Symbol>
+	<LastPrice>46.15</LastPrice>
+	<Change>0.01</Change><
+	ChangePercent>0.0216731686</ChangePercent>
+	<Timestamp>Fri Jun 5 15:59:00 UTC-04:00 2015</Timestamp>
+	<MSDate>42160.6659722222</MSDate>
+	<MarketCap>373333886250</MarketCap>
+	<Volume>2428584</Volume>
+	<ChangeYTD>46.45</ChangeYTD>
+	<ChangePercentYTD>-0.6458557589</ChangePercentYTD>
+	<High>46.52</High>
+	<Low>45.84</Low>
+	<Open>46.3</Open>
+</StockQuote>

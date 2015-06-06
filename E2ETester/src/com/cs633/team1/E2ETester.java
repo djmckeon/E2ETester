@@ -1,7 +1,9 @@
 package com.cs633.team1;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -12,6 +14,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -31,17 +36,36 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 @SuppressWarnings("serial")
 public class E2ETester extends JPanel implements ActionListener,
 PropertyChangeListener {
-    JTable table;
+	static JFrame frame;
+    static JTable table;
     JTextField progressText;
     JPanel p2;
     private RunTest rt;
-    JButton graphButton;
-    JButton runButton;
+    static JButton graphButton;
+    static JButton runButton;
+    static String defaultPath;
     
+    // main method - program flow starts here
+    public static void main(String[] args) {
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowGUI();
+            }
+        });
+    }
+
 	public E2ETester() {
         super(new GridLayout(1,0));
         
@@ -109,8 +133,10 @@ PropertyChangeListener {
             	Component comp = super.prepareRenderer(renderer, index_row, index_col);
             	if(index_col == 0 || index_col > 5) {
             		comp.setBackground(new Color(250, 250, 250));
+            		comp.setForeground(Color.black);
             	} else{
 					comp.setBackground(Color.white);
+            		comp.setForeground(Color.black);
 				}
             	return comp;
             }
@@ -136,16 +162,25 @@ PropertyChangeListener {
 	            	column.setPreferredWidth(350);
 	            	break;
 	            case 7: // results
-	            	column.setPreferredWidth(80);
+	            	column.setPreferredWidth(75);
 	            	break;
 	            case 8: // run time
-	            	column.setPreferredWidth(90);
+	            	column.setPreferredWidth(93);
 	            	break;
 	            default:
 	            	column.setPreferredWidth(140);
             }
         }
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        
+        //Allow the cells to be edited with a single click
+        DefaultCellEditor singleClick = new DefaultCellEditor(new JTextField());
+        singleClick.setClickCountToStart(1);
+        
+        //Set the editor as default on every column
+        for (int i = 0; i < table.getColumnCount(); i++) {
+        	table.setDefaultEditor(table.getColumnClass(i), singleClick);
+        }
         
         //Create the scroll pane and add the table to it.
         JScrollPane scrollPane = new JScrollPane(table);
@@ -165,6 +200,8 @@ PropertyChangeListener {
          
         progressText = new JTextField(114);
         progressText.setEditable(false);
+        progressText.setBorder(javax.swing.BorderFactory.createEmptyBorder()); //remove the border
+        progressText.setFont(new Font(progressText.getFont().getFontName(), Font.ITALIC, progressText.getFont().getSize()));
         progressText.setText("Progress:");
         p2.add(progressText);
         
@@ -210,8 +247,26 @@ PropertyChangeListener {
     }
 
     private static void createAndShowGUI() {
+    	//Set the GUI look and feel
+    	
+    	try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
         //Create and set up the window.
-        JFrame frame = new JFrame("End-to-End Webservice Test Framework");
+        frame = new JFrame("End-to-End Webservice Test Framework");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
         
@@ -232,7 +287,7 @@ PropertyChangeListener {
         // Create and add simple menu item to one of the drop down menu
         JMenuItem saveAction = new JMenuItem("Save                Ctl+S");
         saveAction.setMnemonic(KeyEvent.VK_S);
-        JMenuItem openAction = new JMenuItem("Open               Ctl+O");
+        JMenuItem openAction = new JMenuItem("Open              Ctl+O");
         openAction.setMnemonic(KeyEvent.VK_O);
         JMenuItem exitAction = new JMenuItem("Exit");
         exitAction.setMnemonic(KeyEvent.VK_X);
@@ -244,7 +299,7 @@ PropertyChangeListener {
         copyAction.setText("Copy            Ctl+C");
         copyAction.setMnemonic(KeyEvent.VK_C);
         JMenuItem pasteAction = new JMenuItem(new DefaultEditorKit.PasteAction());
-        pasteAction.setText("Paste          Ctl+V");
+        pasteAction.setText("Paste            Ctl+V");
         pasteAction.setMnemonic(KeyEvent.VK_P);
 
 
@@ -259,13 +314,13 @@ PropertyChangeListener {
         // Add listeners to the menu items
         saveAction.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent arg0) {
-                System.out.println("You have clicked on the save action");
+                saveDialogue();
             }
         });
 
         openAction.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent arg0) {
-                System.out.println("You have clicked on the open action");
+                openDialogue();
             }
         });
         
@@ -291,7 +346,7 @@ PropertyChangeListener {
         frame.setVisible(true);
     }
     
-    public void addRow() {
+    public static void addRow() {
         DefaultTableModel model = (DefaultTableModel)table.getModel();
         model.insertRow(table.getRowCount(),new Object[]  {table.getRowCount() + 1,"","","","","","","",""});
     }
@@ -320,7 +375,6 @@ PropertyChangeListener {
             			model.setValueAt("Failed", i, 7);
             		}      
             		model.setValueAt(duration, i, 8);
-//	        		Thread.sleep(500);
             	}
 	        }
         } catch (Exception e) 
@@ -365,9 +419,9 @@ PropertyChangeListener {
         javax.swing.table.TableModel model = table.getModel();
 
         for (int i=0; i < numRows; i++) {
-        	model.setValueAt(null, i, 6);
-        	model.setValueAt(null, i, 7);
-        	model.setValueAt(null, i, 8);
+        	model.setValueAt("", i, 6);
+        	model.setValueAt("", i, 7);
+        	model.setValueAt("", i, 8);
         }    	
     }
 
@@ -402,14 +456,167 @@ PropertyChangeListener {
 		}
     }
     
-    
-    // main method - program flow starts here
-    public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowGUI();
+    // Save the input to a file
+    public static void saveDialogue() {
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        String fileRecord;
+        javax.swing.table.TableModel model = table.getModel();
+
+        final JFileChooser fc = new JFileChooser();
+        fc.setAcceptAllFileFilterUsed(false);
+        fc.setMultiSelectionEnabled(false);
+        String defaultPath = getDefaultPath();
+        if (!defaultPath.equals("")) {
+        	fc.setCurrentDirectory(new File(defaultPath));
+        }
+        fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
+        int retVal = fc.showSaveDialog(frame);
+        if (retVal == JFileChooser.APPROVE_OPTION) {
+            File selectedfile = fc.getSelectedFile();
+            String fileName = selectedfile.getAbsolutePath();
+            if (!fileName.endsWith(".e2e")) {
+            	fileName = fileName + ".e2e";
             }
-        });
+            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+            try {
+	            FileWriter fstream = new FileWriter(fileName);
+	            BufferedWriter out = new BufferedWriter(fstream);
+	
+		        for (int i=0; i < numRows; i++) {
+		        	fileRecord = "";
+		        	for (int j=0; j < numCols; j++) {
+		        		fileRecord = fileRecord + model.getValueAt(i, j);
+		        		if ((numCols - j) > 1) {
+		        			fileRecord = fileRecord + ",";
+		        		}
+		        	}
+		        	out.write(fileRecord);
+		        	out.newLine();
+		        }
+		        
+		        out.close();
+	        	JOptionPane.showMessageDialog(null, "File Saved");		
+            } catch (Exception e) {
+            	e.printStackTrace();
+            }
+        }
+        
+    }
+    
+	// Open the input file
+    public static void openDialogue() {
+    	BufferedReader br = null;
+    	String line = "";
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        boolean rowsFound = false;
+        javax.swing.table.TableModel model = table.getModel();
+
+    	
+        final JFileChooser fc = new JFileChooser();
+        fc.setAcceptAllFileFilterUsed(false);
+        fc.setMultiSelectionEnabled(false);
+        String defaultPath = getDefaultPath();
+        if (!defaultPath.equals("")) {
+        	fc.setCurrentDirectory(new File(defaultPath));
+        }
+        fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
+        int retVal = fc.showOpenDialog(frame);
+        if (retVal == JFileChooser.APPROVE_OPTION) {
+            File selectedfile = fc.getSelectedFile();
+            String fileName = selectedfile.getAbsolutePath();
+            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+        	try {
+        		br = new BufferedReader(new FileReader(fileName));
+        		int rowNum = 0;
+        		while ((line = br.readLine()) != null) {
+        			// If the saved file has more rows than what is currently on the screen, add a row
+        			if (rowNum >= numRows) {
+        				addRow();
+        			}
+        			String[] tableColumns = line.split(",");  // use comma as separator
+        			for (int i=0; i < tableColumns.length; i++) {
+        				model.setValueAt(tableColumns[i], rowNum, i);
+        				
+        			}
+        			if (!rowsFound) {  // see if we should enable the graph button
+        				if (!model.getValueAt(rowNum, 6).equals("") && !model.getValueAt(rowNum, 7).equals("") && !model.getValueAt(rowNum, 8).equals("")) {
+        					rowsFound = true;
+        				}
+        			}
+        			rowNum++;
+        		}
+        		if (rowsFound) {
+        			graphButton.setEnabled(true);
+        		}
+        	} catch (FileNotFoundException e) {
+        		e.printStackTrace();
+        	} catch (IOException e) {
+        		e.printStackTrace();
+        	} finally {
+        		if (br != null) {
+        			try {
+        				br.close();
+        			} catch (IOException e) {
+        				e.printStackTrace();
+        			}
+        		}
+        	}
+        }
+    	
+    }
+    
+    private static String getDefaultPath() {
+    	BufferedReader br = null;
+    	String line = "";
+    	String iniFileName = "E2ETester.ini";
+    	
+		File iniFile = new File(iniFileName);
+		if (!iniFile.exists()) {
+			defaultPath = "";
+			return defaultPath;
+		}
+
+		try {
+			br = new BufferedReader(new FileReader(iniFileName));
+			line = br.readLine(); 
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+    	} finally {
+    		if (br != null) {
+    			try {
+    				br.close();
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+    		}
+    	}
+		
+		defaultPath = line;
+		return defaultPath;
+	}
+    
+    private static void setDefaultPath(String path) {
+    	String fileName = "E2ETester.ini";
+    	if (defaultPath.equals(path)) {
+    		return;
+    	}
+    	
+    	defaultPath = path;
+    	
+        FileWriter fstream = null;
+		try {
+			fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);
+			out.write(path);
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
     }
 
  }
