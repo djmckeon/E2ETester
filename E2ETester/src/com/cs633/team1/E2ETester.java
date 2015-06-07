@@ -285,11 +285,11 @@ PropertyChangeListener {
         menuBar.add(editMenu);
          
         // Create and add simple menu item to one of the drop down menu
-        JMenuItem saveAction = new JMenuItem("Save                Ctl+S");
+        JMenuItem saveAction = new JMenuItem("Save     ");
         saveAction.setMnemonic(KeyEvent.VK_S);
-        JMenuItem openAction = new JMenuItem("Open              Ctl+O");
+        JMenuItem openAction = new JMenuItem("Open     ");
         openAction.setMnemonic(KeyEvent.VK_O);
-        JMenuItem exitAction = new JMenuItem("Exit");
+        JMenuItem exitAction = new JMenuItem("Exit     ");
         exitAction.setMnemonic(KeyEvent.VK_X);
         
         JMenuItem cutAction =   new JMenuItem(new DefaultEditorKit.CutAction());
@@ -301,6 +301,10 @@ PropertyChangeListener {
         JMenuItem pasteAction = new JMenuItem(new DefaultEditorKit.PasteAction());
         pasteAction.setText("Paste            Ctl+V");
         pasteAction.setMnemonic(KeyEvent.VK_P);
+        JMenuItem clearResultsAction = new JMenuItem("Clear Results");
+        exitAction.setMnemonic(KeyEvent.VK_R);
+        JMenuItem clearAllAction = new JMenuItem("Clear All Fields");
+        exitAction.setMnemonic(KeyEvent.VK_A);
 
 
         fileMenu.add(saveAction);
@@ -310,6 +314,9 @@ PropertyChangeListener {
         editMenu.add(cutAction);
         editMenu.add(copyAction);
         editMenu.add(pasteAction);
+        editMenu.addSeparator();
+        editMenu.add(clearResultsAction);
+        editMenu.add(clearAllAction);
 
         // Add listeners to the menu items
         saveAction.addActionListener(new ActionListener() {
@@ -334,7 +341,26 @@ PropertyChangeListener {
             }
         });
 
-        
+        clearResultsAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	int dialogButton = 0;
+				int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to clear the results?","Clear Results",dialogButton);
+            	if(dialogResult == JOptionPane.YES_OPTION){
+            		initOutputCells(); 
+            	}
+            }
+        });
+
+        clearAllAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	int dialogButton = 0;
+				int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to clear all fields?","Clear All",dialogButton);
+            	if(dialogResult == JOptionPane.YES_OPTION){
+            		initAllCells(); 
+            	}
+            }
+        });
+
         //Create and set up the content pane.
         E2ETester newContentPane = new E2ETester();
         newContentPane.setOpaque(true); //content panes must be opaque
@@ -414,7 +440,7 @@ PropertyChangeListener {
     }
     
     // Clear any text that may be in the output cells from a previous run
-    public void initOutputCells() {
+    public static void initOutputCells() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
 
@@ -423,6 +449,23 @@ PropertyChangeListener {
         	model.setValueAt("", i, 7);
         	model.setValueAt("", i, 8);
         }    	
+
+        graphButton.setEnabled(false);
+    }
+
+    // Clear all text that may be in the cells 
+    public static void initAllCells() {
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        javax.swing.table.TableModel model = table.getModel();
+
+        for (int i=0; i < numRows; i++) {
+        	for (int j=1; j < numCols; j++) {  //Don't clear the first column
+        		model.setValueAt("", i, j);
+        	}
+        }    	
+        
+        graphButton.setEnabled(false);
     }
 
     public void changeProgressText(String textValue) {
