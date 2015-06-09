@@ -61,6 +61,7 @@ PropertyChangeListener {
     JTextField progressText;
     JPanel p2;
     private RunTest rt;
+    private RepeatTest repeatt;
     static JButton graphButton;
     static JButton runButton;
     static String defaultPath;
@@ -262,9 +263,9 @@ PropertyChangeListener {
 					runButton.setEnabled(false);
 					graphButton.setEnabled(false);
 					changeProgressText("Progress: Running test script (repeat)...");
-					rt = new RunTest();
-					rt.addPropertyChangeListener(this);
-					rt.execute();
+					repeatt = new RepeatTest();
+					repeatt.addPropertyChangeListener(this);
+					repeatt.execute();
 
 				} else {
 					repeatButton.setEnabled(true);
