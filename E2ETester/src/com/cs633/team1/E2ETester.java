@@ -505,11 +505,11 @@ PropertyChangeListener {
         }
         if (rowsFound) {
         	changeProgressText("Progress: Complete");
+        	graphButton.setEnabled(true);
         } else {
         	changeProgressText("Progress: No endpoints specified");
         }
         runButton.setEnabled(true);
-    	graphButton.setEnabled(true);
     }
 
     /**
