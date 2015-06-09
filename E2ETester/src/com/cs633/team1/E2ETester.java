@@ -151,6 +151,7 @@ PropertyChangeListener {
 						index_col);
 				if (index_col == 0 || index_col > 5) {
 					comp.setBackground(new Color(250, 250, 250));
+            		comp.setForeground(Color.black);
 				} else {
 					comp.setBackground(Color.white);
             		comp.setForeground(Color.black);
@@ -253,7 +254,7 @@ PropertyChangeListener {
 		});
 		p3.add(runButton);
 
-		repeatButton = new JButton("Continious Test");
+		repeatButton = new JButton("Continuous Test");
 		repeatButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent b) {
 				if (repeatButton.isEnabled()) {
