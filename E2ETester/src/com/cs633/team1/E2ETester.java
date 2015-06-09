@@ -56,7 +56,6 @@ import java.io.IOException;
 @SuppressWarnings("serial")
 public class E2ETester extends JPanel implements ActionListener,
 PropertyChangeListener {
-PropertyChangeListener {
 	static JFrame frame;
     static JTable table;
     JTextField progressText;
