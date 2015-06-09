@@ -45,6 +45,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * End-to-End RESTful web service tester
+ * Users can enter a description, endpoint, input, XML tag to test against, and an expected result.
+ * When the test is run, it will compare the actual result with the expected result and show a success/failed message along with the response time.
+ * Users can then optionally graph the results, save the output or open an existing saved file.
+ * @author mckeon
+ *
+ */
 @SuppressWarnings("serial")
 public class E2ETester extends JPanel implements ActionListener,
 PropertyChangeListener {
@@ -57,7 +65,10 @@ PropertyChangeListener {
     static JButton runButton;
     static String defaultPath;
     
-    // main method - program flow starts here
+    /**
+     * main method - program flow starts here
+     * @param args
+     */
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -66,6 +77,10 @@ PropertyChangeListener {
         });
     }
 
+    /**
+     * Constructor
+     * Initialize 10 rows and define the UI layout.
+     */
 	public E2ETester() {
         super(new GridLayout(1,0));
         
@@ -246,22 +261,22 @@ PropertyChangeListener {
          
     }
 
+	/**
+	 * Create the graphic user interface.
+	 * Set the look and feel to the system look and feel.
+	 */
     private static void createAndShowGUI() {
     	//Set the GUI look and feel
     	
     	try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedLookAndFeelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     	
@@ -372,11 +387,17 @@ PropertyChangeListener {
         frame.setVisible(true);
     }
     
+    /**
+     * Add a new row to the table
+     */
     public static void addRow() {
         DefaultTableModel model = (DefaultTableModel)table.getModel();
         model.insertRow(table.getRowCount(),new Object[]  {table.getRowCount() + 1,"","","","","","","",""});
     }
     
+    /**
+     * Run the test
+     */
     public void runTest() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
@@ -416,6 +437,9 @@ PropertyChangeListener {
     	graphButton.setEnabled(true);
     }
     
+    /**
+     * Graph the results
+     */
     public void graphResults() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
@@ -439,7 +463,9 @@ PropertyChangeListener {
         }
     }
     
-    // Clear any text that may be in the output cells from a previous run
+    /**
+     *  Clear any text that may be in the output cells from a previous run
+     */
     public static void initOutputCells() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
@@ -453,7 +479,9 @@ PropertyChangeListener {
         graphButton.setEnabled(false);
     }
 
-    // Clear all text that may be in the cells 
+    /**
+     *  Clear all text that may be in the cells 
+     */
     public static void initAllCells() {
         int numRows = table.getRowCount();
         int numCols = table.getColumnCount();
@@ -468,23 +496,38 @@ PropertyChangeListener {
         graphButton.setEnabled(false);
     }
 
+    /**
+     * Alter the text that is show in the progress bar.
+     * @param textValue
+     */
     public void changeProgressText(String textValue) {
     	progressText.setText(textValue);
     	progressText.repaint();
     	progressText.revalidate();	
     }
 
+    /**
+     * Invoked when the property changes
+     */
     public void propertyChange(PropertyChangeEvent evt) {
 
       }
 
+    /**
+     * Invoked when an action is performed
+     */
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		
     }
 	
-	// The SwingWorker framework allows for multi-threading so progress messages
-	// an be updated while the program runs through the test script.
+	/**
+	 *  Run the test through SwingWorker.
+	 *  The SwingWorker framework allows for multi-threading so progress messages can be updated while the program runs through the test script.
+	 * @author mckeon
+	 *
+	 */
+	
     class RunTest extends SwingWorker<Void, Void> {
         @Override
         public Void doInBackground() {
@@ -493,13 +536,18 @@ PropertyChangeListener {
         	return null;
         }
 
+        /**
+         * Invoked when a property changes
+         */
 		public void addPropertyChangeListener(ActionListener actionListener) {
 			// TODO Auto-generated method stub
 			
 		}
     }
     
-    // Save the input to a file
+    /**
+     *  Save the input to a file
+     */
     public static void saveDialogue() {
         int numRows = table.getRowCount();
         int numCols = table.getColumnCount();
@@ -547,7 +595,9 @@ PropertyChangeListener {
         
     }
     
-	// Open the input file
+	/**
+	 *  Open the input file
+	 */
     public static void openDialogue() {
     	BufferedReader br = null;
     	String line = "";
@@ -610,6 +660,11 @@ PropertyChangeListener {
     	
     }
     
+    /**
+     * Get the default path for the open/save dialogue.
+     * This will anchor the user in the last folder they navigated to.
+     * @return defaultPath
+     */
     private static String getDefaultPath() {
     	BufferedReader br = null;
     	String line = "";
@@ -642,6 +697,10 @@ PropertyChangeListener {
 		return defaultPath;
 	}
     
+    /**
+     * Saves the last path that the user navigated to in the open/save dialogue.
+     * @param path
+     */
     private static void setDefaultPath(String path) {
     	String fileName = "E2ETester.ini";
     	if (defaultPath.equals(path)) {

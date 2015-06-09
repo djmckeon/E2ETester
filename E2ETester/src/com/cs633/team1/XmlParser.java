@@ -10,25 +10,42 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
  
+/**
+ * SAX XML Parser
+ * @author mckeon
+ *
+ */
 public class XmlParser {
 	private String xmlString;
 	private String xmlTag;
 	private String responseValue;
 	
-	// Default constructor - initialize fields to empty
+	/**
+	 *  Default constructor - initialize fields to empty
+	 */
 	public XmlParser() {
 		this.setXmlString("");
 		this.setXmlTag("");
 		this.setResponseValue("");
 	}
 	
-	// Overridden constructor - initialize fields to value provided
+	/**
+	 *  Overridden constructor - initialize fields to value provided
+	 * @param xmlString
+	 * @param xmlTag
+	 */
 	public XmlParser(String xmlString, String xmlTag) {
 		this.setXmlString(xmlString);
 		this.setXmlTag(xmlTag);
 		this.setResponseValue("");  // Initialize the output field
 	}
 	
+	/**
+	 * parse the XML String and populate the responseValue with the value within the xmlTag
+	 * @param xmlString
+	 * @param xmlTag
+	 * @param responseValue
+	 */
 	public void parseXmlDocument(String xmlString, String xmlTag, String responseValue) {
 		this.setXmlString(xmlString);
 		this.setXmlTag(xmlTag);
@@ -40,6 +57,10 @@ public class XmlParser {
 		responseValue = this.getResponseValue();
 	}
 	
+	/**
+	 * Overridden - Parse the XML string
+	 * @throws SAXException
+	 */
 	public void parseXmlDocument() throws SAXException {
 		
 		try {
@@ -74,28 +95,52 @@ public class XmlParser {
 	}
 	
 
-public String getXmlString() {
-	return xmlString;
-}
-
-public void setXmlString(String xmlString) {
-	this.xmlString = xmlString;
-}
-
-public String getXmlTag() {
-	return xmlTag;
-}
-
-public void setXmlTag(String xmlTag) {
-	this.xmlTag = xmlTag;
-}
-
-public String getResponseValue() {
-	return responseValue;
-}
-
-public void setResponseValue(String responseValue) {
-	this.responseValue = responseValue;
-}
+	/**
+	 * Getter for xmlString field
+	 * @return xmlString
+	 */
+	public String getXmlString() {
+		return xmlString;
+	}
+	
+	/**
+	 * Setter for xmlString field
+	 * @param xmlString
+	 */
+	public void setXmlString(String xmlString) {
+		this.xmlString = xmlString;
+	}
+	
+	/**
+	 * Getter for xmlTag field
+	 * @return xmlTag
+	 */
+	public String getXmlTag() {
+		return xmlTag;
+	}
+	
+	/**
+	 * Setter for xmlTag field
+	 * @param xmlTag
+	 */
+	public void setXmlTag(String xmlTag) {
+		this.xmlTag = xmlTag;
+	}
+	
+	/**
+	 * Getter for responseValue field
+	 * @return responseValue
+	 */
+	public String getResponseValue() {
+		return responseValue;
+	}
+	
+	/**
+	 * Setter for responseValue field
+	 * @param responseValue
+	 */
+	public void setResponseValue(String responseValue) {
+		this.responseValue = responseValue;
+	}
  
 }
