@@ -17,7 +17,11 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-
+/**
+ * Consumes a RESTful web service
+ * @author mckeon
+ *
+ */
 public class ConsumeWebService {
 
 	private String endPoint;
@@ -25,7 +29,9 @@ public class ConsumeWebService {
 	private String xmlTag;
 	private String webServiceResponse;
 	
-	// Default constructor - initialize the fields
+	/**
+	 *  Default constructor - initialize the fields
+	 */
 	public ConsumeWebService() {
 		this.setEndPoint("");
 		this.setInputParam("");
@@ -33,7 +39,12 @@ public class ConsumeWebService {
 		this.setWebServiceResponse("");
 	}
 	
-	// Overridden constructor - set the fields to the passed in values
+	/**
+	 *  Overridden constructor - set the fields to the passed in values
+	 * @param endPoint
+	 * @param inputParam
+	 * @param xmlTag
+	 */
 	public ConsumeWebService(String endPoint, String inputParam, String xmlTag) {
 		this.setEndPoint(endPoint);
 		this.setInputParam(inputParam);
@@ -41,6 +52,10 @@ public class ConsumeWebService {
 		this.setWebServiceResponse("");  // This is an output field, so initialize it
 	}
 	
+	/**
+	 * Calls the RESTful web service defined in the endPoint and inputParm fields.
+	 * @throws Exception
+	 */
     public void callRestService() throws Exception {
     	HttpGet httpget;
     	
@@ -83,34 +98,66 @@ public class ConsumeWebService {
         }
     }
 
+    /**
+     * Getter for the endPoint field 
+     * @return endPoint
+     */
 	public String getEndPoint() {
 		return endPoint;
 	}
 
+	/**
+	 * Setter for the endpoint field
+	 * @param endPoint
+	 */
 	public void setEndPoint(String endPoint) {
 		this.endPoint = endPoint;
 	}
 
+	/**
+	 * Getter for the inputParm field
+	 * @return inputParm
+	 */
 	public String getInputParam() {
 		return inputParam;
 	}
 
+	/**
+	 * Setter for the inputParm field
+	 * @param inputParam
+	 */
 	public void setInputParam(String inputParam) {
 		this.inputParam = inputParam;
 	}
 
+	/**
+	 * Getter for the webServiceResponse field
+	 * @return webServiceResponse
+	 */
 	public String getWebServiceResponse() {
 		return webServiceResponse;
 	}
 
+	/**
+	 * Setter for the webServiceResponse field
+	 * @param webServiceResponse
+	 */
 	public void setWebServiceResponse(String webServiceResponse) {
 		this.webServiceResponse = webServiceResponse;
 	}
 
+	/**
+	 * Getter for the xmlTag field
+	 * @return xmlTag
+	 */
 	public String getXmlTag() {
 		return xmlTag;
 	}
 
+	/**
+	 * Setter for the xmlTag field
+	 * @param xmlTag
+	 */
 	public void setXmlTag(String xmlTag) {
 		this.xmlTag = xmlTag;
 	}

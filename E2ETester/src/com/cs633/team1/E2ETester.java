@@ -1,7 +1,9 @@
 package com.cs633.team1;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -12,6 +14,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -31,18 +36,53 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
+/**
+ * End-to-End RESTful web service tester
+ * Users can enter a description, endpoint, input, XML tag to test against, and an expected result.
+ * When the test is run, it will compare the actual result with the expected result and show a success/failed message along with the response time.
+ * Users can then optionally graph the results, save the output or open an existing saved file.
+ * @author mckeon
+ *
+ */
 @SuppressWarnings("serial")
 public class E2ETester extends JPanel implements ActionListener,
-		PropertyChangeListener {
-	JTable table;
-	JTextField progressText;
-	JPanel p2;
-	private RunTest rt;
-	JButton graphButton;
-	JButton runButton;
-	JButton repeatButton;
-
+PropertyChangeListener {
+PropertyChangeListener {
+	static JFrame frame;
+    static JTable table;
+    JTextField progressText;
+    JPanel p2;
+    private RunTest rt;
+    static JButton graphButton;
+    static JButton runButton;
+    static String defaultPath;
+    JButton repeatButton;
+    
+    /**
+     * main method - program flow starts here
+     * @param args
+     */
+    public static void main(String[] args) {
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowGUI();
+            }
+        });
+    }
+    
+    /**
+     * Constructor
+     * Initialize 10 rows and define the UI layout.
+     */
 	public E2ETester() {
 		super(new GridLayout(1, 0));
 
@@ -53,21 +93,30 @@ public class E2ETester extends JPanel implements ActionListener,
 		p1.setPreferredSize(new Dimension(1285, 195));
 		p1.setBorder(BorderFactory.createLineBorder(Color.gray));
 
-		// Define the column names
-		String[] columnNames = { "", "Description", "Endpoint", "Input",
-				"XML Tag", "Expected Response", "Actual Response", "Results",
-				"Run Time (ms)" };
+        // Define the column names
+        String[] columnNames = {"",
+                                "Description",
+                                "Endpoint",
+                                "Input",
+                                "XML Tag",
+                                "Expected Response",
+                                "Actual Response",
+                                "Results",
+                                "Run Time (ms)"
+                                };
 
-		Object[][] data = { { "1", "", "", "", "", "", "", "", "" },
-				{ "2", "", "", "", "", "", "", "", "" },
-				{ "3", "", "", "", "", "", "", "", "" },
-				{ "4", "", "", "", "", "", "", "", "" },
-				{ "5", "", "", "", "", "", "", "", "" },
-				{ "6", "", "", "", "", "", "", "", "" },
-				{ "7", "", "", "", "", "", "", "", "" },
-				{ "8", "", "", "", "", "", "", "", "" },
-				{ "9", "", "", "", "", "", "", "", "" },
-				{ "10", "", "", "", "", "", "", "", "" }, };
+        Object[][] data = {
+        		{"1", "", "", "", "", "", "", "", ""},
+        		{"2", "", "", "", "", "", "", "", ""},
+        		{"3", "", "", "", "", "", "", "", ""},
+        		{"4", "", "", "", "", "", "", "", ""},
+        		{"5", "", "", "", "", "", "", "", ""},
+        		{"6", "", "", "", "", "", "", "", ""},
+        		{"7", "", "", "", "", "", "", "", ""},
+        		{"8", "", "", "", "", "", "", "", ""},
+        		{"9", "", "", "", "", "", "", "", ""},
+        		{"10", "", "", "", "", "", "", "", ""},
+        };
 
 		// int numRows = 10;
 		// DefaultTableModel model = new DefaultTableModel(numRows,
@@ -105,6 +154,7 @@ public class E2ETester extends JPanel implements ActionListener,
 					comp.setBackground(new Color(250, 250, 250));
 				} else {
 					comp.setBackground(Color.white);
+            		comp.setForeground(Color.black);
 				}
 				return comp;
 			}
@@ -130,16 +180,25 @@ public class E2ETester extends JPanel implements ActionListener,
 				column.setPreferredWidth(350);
 				break;
 			case 7: // results
-				column.setPreferredWidth(80);
+				column.setPreferredWidth(75);
 				break;
 			case 8: // run time
-				column.setPreferredWidth(90);
+				column.setPreferredWidth(93);
 				break;
 			default:
 				column.setPreferredWidth(140);
 			}
 		}
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        //Allow the cells to be edited with a single click
+        DefaultCellEditor singleClick = new DefaultCellEditor(new JTextField());
+        singleClick.setClickCountToStart(1);
+        
+        //Set the editor as default on every column
+        for (int i = 0; i < table.getColumnCount(); i++) {
+        	table.setDefaultEditor(table.getColumnClass(i), singleClick);
+        }
 
 		// Create the scroll pane and add the table to it.
 		JScrollPane scrollPane = new JScrollPane(table);
@@ -159,6 +218,8 @@ public class E2ETester extends JPanel implements ActionListener,
 
 		progressText = new JTextField(114);
 		progressText.setEditable(false);
+        progressText.setBorder(javax.swing.BorderFactory.createEmptyBorder()); //remove the border
+        progressText.setFont(new Font(progressText.getFont().getFontName(), Font.ITALIC, progressText.getFont().getSize()));
 		progressText.setText("Progress:");
 		p2.add(progressText);
 
@@ -229,74 +290,115 @@ public class E2ETester extends JPanel implements ActionListener,
 	}
 
 	private static void createAndShowGUI() {
-		// Create and set up the window.
-		JFrame frame = new JFrame("End-to-End Webservice Test Framework");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setResizable(false);
+    	//Set the GUI look and feel
+    	
+    	try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
+		}
+    	
+        //Create and set up the window.
+        frame = new JFrame("End-to-End Webservice Test Framework");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        
+        // Creates a menubar for a JFrame
+        JMenuBar menuBar = new JMenuBar();
+         
+        // Add the menubar to the frame
+        frame.setJMenuBar(menuBar);
+         
+        // Define and add two drop down menu to the menubar
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic(KeyEvent.VK_F);
+        JMenu editMenu = new JMenu("Edit");
+        editMenu.setMnemonic(KeyEvent.VK_E);
+        menuBar.add(fileMenu);
+        menuBar.add(editMenu);
+         
+        // Create and add simple menu item to one of the drop down menu
+        JMenuItem saveAction = new JMenuItem("Save     ");
+        saveAction.setMnemonic(KeyEvent.VK_S);
+        JMenuItem openAction = new JMenuItem("Open     ");
+        openAction.setMnemonic(KeyEvent.VK_O);
+        JMenuItem exitAction = new JMenuItem("Exit     ");
+        exitAction.setMnemonic(KeyEvent.VK_X);
+        
+        JMenuItem cutAction =   new JMenuItem(new DefaultEditorKit.CutAction());
+        cutAction.setText("Cut               Ctl+X");
+        cutAction.setMnemonic(KeyEvent.VK_T);
+        JMenuItem copyAction =  new JMenuItem(new DefaultEditorKit.CopyAction());
+        copyAction.setText("Copy            Ctl+C");
+        copyAction.setMnemonic(KeyEvent.VK_C);
+        JMenuItem pasteAction = new JMenuItem(new DefaultEditorKit.PasteAction());
+        pasteAction.setText("Paste            Ctl+V");
+        pasteAction.setMnemonic(KeyEvent.VK_P);
+        JMenuItem clearResultsAction = new JMenuItem("Clear Results");
+        exitAction.setMnemonic(KeyEvent.VK_R);
+        JMenuItem clearAllAction = new JMenuItem("Clear All Fields");
+        exitAction.setMnemonic(KeyEvent.VK_A);
 
-		// Creates a menubar for a JFrame
-		JMenuBar menuBar = new JMenuBar();
 
-		// Add the menubar to the frame
-		frame.setJMenuBar(menuBar);
-		// Define and add two drop down menu to the menubar
-		JMenu fileMenu = new JMenu("File");
-		fileMenu.setMnemonic(KeyEvent.VK_F);
-		JMenu editMenu = new JMenu("Edit");
-		editMenu.setMnemonic(KeyEvent.VK_E);
-		menuBar.add(fileMenu);
-		menuBar.add(editMenu);
+        fileMenu.add(saveAction);
+        fileMenu.add(openAction);
+        fileMenu.addSeparator();
+        fileMenu.add(exitAction);
+        editMenu.add(cutAction);
+        editMenu.add(copyAction);
+        editMenu.add(pasteAction);
+        editMenu.addSeparator();
+        editMenu.add(clearResultsAction);
+        editMenu.add(clearAllAction);
 
-		// Create and add simple menu item to one of the drop down menu
-		JMenuItem saveAction = new JMenuItem("Save                Ctl+S");
-		saveAction.setMnemonic(KeyEvent.VK_S);
-		JMenuItem openAction = new JMenuItem("Open               Ctl+O");
-		openAction.setMnemonic(KeyEvent.VK_O);
-		JMenuItem exitAction = new JMenuItem("Exit");
-		exitAction.setMnemonic(KeyEvent.VK_X);
+        // Add listeners to the menu items
+        saveAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                saveDialogue();
+            }
+        });
 
-		JMenuItem cutAction = new JMenuItem(new DefaultEditorKit.CutAction());
-		cutAction.setText("Cut               Ctl+X");
-		cutAction.setMnemonic(KeyEvent.VK_T);
-		JMenuItem copyAction = new JMenuItem(new DefaultEditorKit.CopyAction());
-		copyAction.setText("Copy            Ctl+C");
-		copyAction.setMnemonic(KeyEvent.VK_C);
-		JMenuItem pasteAction = new JMenuItem(
-				new DefaultEditorKit.PasteAction());
-		pasteAction.setText("Paste          Ctl+V");
-		pasteAction.setMnemonic(KeyEvent.VK_P);
+        openAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                openDialogue();
+            }
+        });
+        
+        exitAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	int dialogButton = 0;
+				int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to exit?","Exit",dialogButton);
+            	if(dialogResult == JOptionPane.YES_OPTION){
+            		System.exit(0);
+            	}
+            }
+        });
 
-		fileMenu.add(saveAction);
-		fileMenu.add(openAction);
-		fileMenu.addSeparator();
-		fileMenu.add(exitAction);
-		editMenu.add(cutAction);
-		editMenu.add(copyAction);
-		editMenu.add(pasteAction);
+        clearResultsAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	int dialogButton = 0;
+				int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to clear the results?","Clear Results",dialogButton);
+            	if(dialogResult == JOptionPane.YES_OPTION){
+            		initOutputCells(); 
+            	}
+            }
+        });
 
-		// Add listeners to the menu items
-		saveAction.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("You have clicked on the save action");
-			}
-		});
-
-		openAction.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("You have clicked on the open action");
-			}
-		});
-
-		exitAction.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int dialogButton = 0;
-				int dialogResult = JOptionPane.showConfirmDialog(null,
-						"Are you sure you want to exit?", "Exit", dialogButton);
-				if (dialogResult == JOptionPane.YES_OPTION) {
-					System.exit(0);
-				}
-			}
-		});
+        clearAllAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	int dialogButton = 0;
+				int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to clear all fields?","Clear All",dialogButton);
+            	if(dialogResult == JOptionPane.YES_OPTION){
+            		initAllCells(); 
+            	}
+            }
+        });
 
 		// Create and set up the content pane.
 		E2ETester newContentPane = new E2ETester();
@@ -309,11 +411,13 @@ public class E2ETester extends JPanel implements ActionListener,
 		frame.setVisible(true);
 	}
 
-	public void addRow() {
-		DefaultTableModel model = (DefaultTableModel) table.getModel();
-		model.insertRow(table.getRowCount(), new Object[] {
-				table.getRowCount() + 1, "", "", "", "", "", "", "", "" });
-	}
+    /**
+     * Add a new row to the table
+     */
+    public static void addRow() {
+        DefaultTableModel model = (DefaultTableModel)table.getModel();
+        model.insertRow(table.getRowCount(),new Object[]  {table.getRowCount() + 1,"","","","","","","",""});
+    }
 
 	public void repeatTest() {
 		int numRows = table.getRowCount();
@@ -366,121 +470,139 @@ public class E2ETester extends JPanel implements ActionListener,
 		}
 	}
 
-	public void runTest() {
-		int numRows = table.getRowCount();
-		javax.swing.table.TableModel model = table.getModel();
-		boolean rowsFound = false;
+    /**
+     * Run the test
+     */
+    public void runTest() {
+        int numRows = table.getRowCount();
+        javax.swing.table.TableModel model = table.getModel();
+        boolean rowsFound = false;
 
-		// Loop through the table values and execute the web service
-		try {
-			do {
-				for (int i = 0; i < numRows; i++) {
-					if (!model.getValueAt(i, 2).equals("")) {
-						rowsFound = true;
-						changeProgressText("Progress: Executing "
-								+ model.getValueAt(i, 2)
-								+ model.getValueAt(i, 3));
-						long startTime = System.nanoTime(); // get the time
-															// before
-															// the call
-						ConsumeWebService service = new ConsumeWebService(model
-								.getValueAt(i, 2).toString(), model.getValueAt(
-								i, 3).toString(), model.getValueAt(i, 4)
-								.toString());
-						service.callRestService();
-						long endTime = System.nanoTime(); // get the time after
-															// the
-															// call
-						long duration = (endTime - startTime) / 1000000; // get
-																			// the
-																			// duration
-																			// in
-																			// milliseconds
-						String response = service.getWebServiceResponse();
-						model.setValueAt(response, i, 6);
-						if (response.equals(model.getValueAt(i, 5))) {
-							model.setValueAt("Success", i, 7);
-						} else {
-							model.setValueAt("Failed", i, 7);
-						}
-						model.setValueAt(duration, i, 8);
+        // Loop through the table values and execute the web service
+        try {
+	        for (int i=0; i < numRows; i++) {
+	        	if (!model.getValueAt(i, 2).equals("")) {
+            		rowsFound = true;
+            		changeProgressText("Progress: Executing " + model.getValueAt(i, 2) + model.getValueAt(i, 3));
+            		long startTime = System.nanoTime();  // get the time before the call
+            		ConsumeWebService service = new ConsumeWebService(model.getValueAt(i, 2).toString(), model.getValueAt(i, 3).toString(), model.getValueAt(i, 4).toString());
+            		service.callRestService();
+            		long endTime = System.nanoTime();  // get the time after the call
+            		long duration = (endTime - startTime)/1000000;  // get the duration in milliseconds
+            		String response = service.getWebServiceResponse();
+            		model.setValueAt(response, i, 6);
+            		if(response.equals(model.getValueAt(i, 5))) {
+            			model.setValueAt("Success", i, 7);
+            		} else {
+            			model.setValueAt("Failed", i, 7);
+            		}      
+            		model.setValueAt(duration, i, 8);
+            	}
+	        }
+        } catch (Exception e) 
+        {
+        	System.out.println(e.getMessage());
+        }
+        if (rowsFound) {
+        	changeProgressText("Progress: Complete");
+        } else {
+        	changeProgressText("Progress: No endpoints specified");
+        }
+        runButton.setEnabled(true);
+    	graphButton.setEnabled(true);
+    }
 
-					}
-				}
-				if (!repeatButton.isEnabled()) {
-					Thread.sleep(6000);
-				}
-			} while (!repeatButton.isEnabled());
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
-		if (rowsFound) {
-			changeProgressText("Progress: Complete");
-		} else {
-			changeProgressText("Progress: No endpoints specified");
-		}
-		runButton.setEnabled(true);
-		graphButton.setEnabled(true);
-	}
+    /**
+     * Graph the results
+     */
+    public void graphResults() {
+        int numRows = table.getRowCount();
+        javax.swing.table.TableModel model = table.getModel();
+        boolean rowsFound = false;
 
-	public void graphResults() {
-		int numRows = table.getRowCount();
-		javax.swing.table.TableModel model = table.getModel();
-		boolean rowsFound = false;
+        final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time");
 
-		final LineGraph graph = new LineGraph(
-				"End-to-End Webservice Test Framework",
-				"Web Service Response Time");
+        for (int i=0; i < numRows; i++) {
+        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+        		rowsFound = true;
+        		graph.addToDataset(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        	}
+        }
+        if (rowsFound) {
+	        graph.pack();
+	        RefineryUtilities.centerFrameOnScreen(graph);
+	        graph.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        graph.setVisible(true);
+        } else {
+        	JOptionPane.showMessageDialog(null, "Unable to graph - no valid results found");
+        }
+    }
 
-		for (int i = 0; i < numRows; i++) {
-			if (model.getValueAt(i, 8) != null
-					&& !model.getValueAt(i, 8).equals("")) {
-				rowsFound = true;
-				graph.addToDataset(
-						Integer.parseInt(model.getValueAt(i, 0).toString()),
-						Integer.parseInt(model.getValueAt(i, 8).toString()));
-			}
-		}
-		if (rowsFound) {
-			graph.pack();
-			RefineryUtilities.centerFrameOnScreen(graph);
-			graph.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			graph.setVisible(true);
-		} else {
-			JOptionPane.showMessageDialog(null,
-					"Unable to graph - no valid results found");
-		}
-	}
+    /**
+     *  Clear any text that may be in the output cells from a previous run
+     */
+    public static void initOutputCells() {
+        int numRows = table.getRowCount();
+        javax.swing.table.TableModel model = table.getModel();
 
-	// Clear any text that may be in the output cells from a previous run
-	public void initOutputCells() {
-		int numRows = table.getRowCount();
-		javax.swing.table.TableModel model = table.getModel();
+        for (int i=0; i < numRows; i++) {
+        	model.setValueAt("", i, 6);
+        	model.setValueAt("", i, 7);
+        	model.setValueAt("", i, 8);
+        }    	
 
-		for (int i = 0; i < numRows; i++) {
-			model.setValueAt(null, i, 6);
-			model.setValueAt(null, i, 7);
-			model.setValueAt(null, i, 8);
-		}
-	}
+        graphButton.setEnabled(false);
+    }
 
+    /**
+     *  Clear all text that may be in the cells 
+     */
+    public static void initAllCells() {
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        javax.swing.table.TableModel model = table.getModel();
+
+        for (int i=0; i < numRows; i++) {
+        	for (int j=1; j < numCols; j++) {  //Don't clear the first column
+        		model.setValueAt("", i, j);
+        	}
+        }    	
+        
+        graphButton.setEnabled(false);
+    }
+
+    /**
+     * Alter the text that is show in the progress bar.
+     * @param textValue
+     */
 	public void changeProgressText(String textValue) {
 		progressText.setText(textValue);
 		progressText.repaint();
 		progressText.revalidate();
 	}
 
+	/**
+     * Invoked when the property changes
+     */
 	public void propertyChange(PropertyChangeEvent evt) {
 
 	}
 
+	/**
+     * Invoked when an action is performed
+     */
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 
 	}
 
-	// The SwingWorker framework allows for multi-threading so progress messages
-	// an be updated while the program runs through the test script.
+	/**
+	 *  Run the test through SwingWorker.
+	 *  The SwingWorker framework allows for multi-threading so progress messages can be updated while the program runs through the test script.
+	 * @author mckeon
+	 *
+	 */
+	
 	class RunTest extends SwingWorker<Void, Void> {
 		@Override
 		public Void doInBackground() {
@@ -511,14 +633,182 @@ public class E2ETester extends JPanel implements ActionListener,
 		}
 	}
 
-	// main method - program flow starts here
-	public static void main(String[] args) {
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				createAndShowGUI();
+    /**
+     *  Save the input to a file
+     */
+    public static void saveDialogue() {
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        String fileRecord;
+        javax.swing.table.TableModel model = table.getModel();
 
-			}
-		});
+        final JFileChooser fc = new JFileChooser();
+        fc.setAcceptAllFileFilterUsed(false);
+        fc.setMultiSelectionEnabled(false);
+        String defaultPath = getDefaultPath();
+        if (!defaultPath.equals("")) {
+        	fc.setCurrentDirectory(new File(defaultPath));
+        }
+        fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
+        int retVal = fc.showSaveDialog(frame);
+        if (retVal == JFileChooser.APPROVE_OPTION) {
+            File selectedfile = fc.getSelectedFile();
+            String fileName = selectedfile.getAbsolutePath();
+            if (!fileName.endsWith(".e2e")) {
+            	fileName = fileName + ".e2e";
+            }
+            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+            try {
+	            FileWriter fstream = new FileWriter(fileName);
+	            BufferedWriter out = new BufferedWriter(fstream);
+	
+		        for (int i=0; i < numRows; i++) {
+		        	fileRecord = "";
+		        	for (int j=0; j < numCols; j++) {
+		        		fileRecord = fileRecord + model.getValueAt(i, j);
+		        		if ((numCols - j) > 1) {
+		        			fileRecord = fileRecord + ",";
+		        		}
+		        	}
+		        	out.write(fileRecord);
+		        	out.newLine();
+		        }
+		        
+		        out.close();
+	        	JOptionPane.showMessageDialog(null, "File Saved");		
+            } catch (Exception e) {
+            	e.printStackTrace();
+            }
+        }
+        
+    }
+    
+	/**
+	 *  Open the input file
+	 */
+    public static void openDialogue() {
+    	BufferedReader br = null;
+    	String line = "";
+        int numRows = table.getRowCount();
+        int numCols = table.getColumnCount();
+        boolean rowsFound = false;
+        javax.swing.table.TableModel model = table.getModel();
+
+    	
+        final JFileChooser fc = new JFileChooser();
+        fc.setAcceptAllFileFilterUsed(false);
+        fc.setMultiSelectionEnabled(false);
+        String defaultPath = getDefaultPath();
+        if (!defaultPath.equals("")) {
+        	fc.setCurrentDirectory(new File(defaultPath));
+        }
+        fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
+        int retVal = fc.showOpenDialog(frame);
+        if (retVal == JFileChooser.APPROVE_OPTION) {
+            File selectedfile = fc.getSelectedFile();
+            String fileName = selectedfile.getAbsolutePath();
+            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+        	try {
+        		br = new BufferedReader(new FileReader(fileName));
+        		int rowNum = 0;
+        		while ((line = br.readLine()) != null) {
+        			// If the saved file has more rows than what is currently on the screen, add a row
+        			if (rowNum >= numRows) {
+        				addRow();
+        			}
+        			String[] tableColumns = line.split(",");  // use comma as separator
+        			for (int i=0; i < tableColumns.length; i++) {
+        				model.setValueAt(tableColumns[i], rowNum, i);
+        				
+        			}
+        			if (!rowsFound) {  // see if we should enable the graph button
+        				if (!model.getValueAt(rowNum, 6).equals("") && !model.getValueAt(rowNum, 7).equals("") && !model.getValueAt(rowNum, 8).equals("")) {
+        					rowsFound = true;
+        				}
+        			}
+        			rowNum++;
+        		}
+        		if (rowsFound) {
+        			graphButton.setEnabled(true);
+        		}
+        	} catch (FileNotFoundException e) {
+        		e.printStackTrace();
+        	} catch (IOException e) {
+        		e.printStackTrace();
+        	} finally {
+        		if (br != null) {
+        			try {
+        				br.close();
+        			} catch (IOException e) {
+        				e.printStackTrace();
+        			}
+        		}
+        	}
+        }
+    	
+    }
+    
+    /**
+     * Get the default path for the open/save dialogue.
+     * This will anchor the user in the last folder they navigated to.
+     * @return defaultPath
+     */
+    private static String getDefaultPath() {
+    	BufferedReader br = null;
+    	String line = "";
+    	String iniFileName = "E2ETester.ini";
+    	
+		File iniFile = new File(iniFileName);
+		if (!iniFile.exists()) {
+			defaultPath = "";
+			return defaultPath;
+		}
+
+		try {
+			br = new BufferedReader(new FileReader(iniFileName));
+			line = br.readLine(); 
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+    	} finally {
+    		if (br != null) {
+    			try {
+    				br.close();
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+    		}
+    	}
+		
+		defaultPath = line;
+		return defaultPath;
 	}
+    
+    /**
+     * Saves the last path that the user navigated to in the open/save dialogue.
+     * @param path
+     */
+    private static void setDefaultPath(String path) {
+    	String fileName = "E2ETester.ini";
+    	if (defaultPath.equals(path)) {
+    		return;
+    	}
+    	
+    	defaultPath = path;
+    	
+        FileWriter fstream = null;
+		try {
+			fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);
+			out.write(path);
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-}
+    }
+
+ }
+
+

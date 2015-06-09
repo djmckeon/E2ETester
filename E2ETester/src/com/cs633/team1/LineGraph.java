@@ -16,11 +16,21 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+/**
+ * Builds a line graph of the test results
+ * @author mckeon
+ *
+ */
 @SuppressWarnings("serial")
 public class LineGraph extends JFrame {
 
    private XYSeries dataSeries = new XYSeries("Response");
    
+   /**
+    * Constructor - define the graph layout
+    * @param applicationTitle
+    * @param chartTitle
+    */
    public LineGraph( String applicationTitle , String chartTitle )
    {
       super(applicationTitle);
@@ -50,10 +60,19 @@ public class LineGraph extends JFrame {
       setContentPane( chartPanel );
    }
 
+   /**
+    * Add a set of values to the dataset (x-coordinate, y-coordinate)
+    * @param xValue
+    * @param yValue
+    */
    public void addToDataset(int xValue, int yValue) {
 	   dataSeries.add(xValue, yValue);
    }
-	
+
+   /**
+    * Create the dataset to be graphed
+    * @return XYDataset
+    */
    private XYDataset createDataset( )
    {
        final XYSeriesCollection dataset = new XYSeriesCollection();
