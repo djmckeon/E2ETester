@@ -222,7 +222,7 @@ PropertyChangeListener {
 		progressText.setText("Progress:");
 		p2.add(progressText);
 
-		add(p2);
+		add(p2); 
 
 		JPanel p3 = new JPanel();
 		p3.setPreferredSize(new Dimension(250, 140));
