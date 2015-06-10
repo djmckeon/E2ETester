@@ -3,6 +3,7 @@ package com.cs633.team1;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -26,11 +27,14 @@ import javax.swing.text.DefaultEditorKit;
 
 import org.jfree.ui.RefineryUtilities;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -62,11 +66,10 @@ PropertyChangeListener {
     JTextField progressText;
     JPanel p2;
     private RunTest rt;
-    private RepeatTest repeatt;
     static JButton graphButton;
     static JButton runButton;
     static String defaultPath;
-    static JButton repeatButton;
+    static JCheckBox repeatBox;
     static JComboBox graphList;
     
     /**
@@ -230,9 +233,13 @@ PropertyChangeListener {
 		add(p2); 
 
 		JPanel p3 = new JPanel();
-		p3.setPreferredSize(new Dimension(250, 80));
-		p3.setBorder(BorderFactory.createLineBorder(Color.black));
+		p3.setPreferredSize(new Dimension(240, 35));
 		p3.setBackground(new Color(250, 250, 250));
+
+		JPanel p4 = new JPanel();
+		p4.setPreferredSize(new Dimension(250, 80));
+		p4.setBorder(BorderFactory.createLineBorder(Color.black));
+		p4.setBackground(new Color(250, 250, 250));
 
 		// Layout dedicated for buttons
 		FlowLayout layout_b = new FlowLayout(FlowLayout.CENTER, 12, 12);
@@ -244,7 +251,9 @@ PropertyChangeListener {
 				addRow();
 			}
 		});
+		p3.setLayout(new FlowLayout(FlowLayout.CENTER));
 		p3.add(addButton);
+		p4.add(p3);
 
 		runButton = new JButton("Run Test");
 		runButton.addActionListener(new ActionListener() {
@@ -258,49 +267,38 @@ PropertyChangeListener {
 				rt.execute();
 			}
 		});
-		p3.add(runButton);
+		p4.add(runButton);
 
-		repeatButton = new JButton("Continuous Test");
-		repeatButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent b) {
-				if (repeatButton.isEnabled()) {
-					repeatButton.setEnabled(false);
-					runButton.setEnabled(false);
-					graphButton.setEnabled(false);
-					graphList.setEnabled(false);
-					changeProgressText("Progress: Running test script (repeat)...");
-					repeatt = new RepeatTest();
-					repeatt.addPropertyChangeListener(this);
-					repeatt.execute();
-
-				} else {
-					repeatButton.setEnabled(true);
-					runButton.setEnabled(true);
-					graphButton.setEnabled(true);
-					graphList.setEnabled(true);
+		repeatBox = new JCheckBox("Continuous Test");
+		repeatBox.setSelected(false);
+		repeatBox.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent c) {
+				if (!repeatBox.isSelected()) {
+					rt.cancel(true);  // Allow the Sleep to terminate if the check box is unchecked
 				}
-
 			}
-		});
-		p3.add(repeatButton);
+		}
+				);
 
-		add(p3);
+		p4.add(repeatBox);
+
+		add(p4);
 		
 		// Layout dedicated for graphs
-		JPanel p4 = new JPanel();
-		p4.setPreferredSize(new Dimension(250, 80));
-		p4.setBorder(BorderFactory.createLineBorder(Color.black));
-		p4.setBackground(new Color(250, 250, 250));
+		JPanel p5 = new JPanel();
+		p5.setPreferredSize(new Dimension(250, 80));
+		p5.setBorder(BorderFactory.createLineBorder(Color.black));
+		p5.setBackground(new Color(250, 250, 250));
 
 		FlowLayout layout_g = new FlowLayout(FlowLayout.CENTER, 12, 12);
-		p4.setLayout(layout_g);
+		p5.setLayout(layout_g);
 
 		// Drop-down list of available graphs
 		String[] graphOptions = { "Line Graph - Response Time (All)", "Line Graph - Response Time (By Result)", "Bar Graph - Success/Failure Counts" };
 		graphList = new JComboBox(graphOptions);
 		graphList.setSelectedIndex(0);
 		graphList.addActionListener(this);
-		p4.add(graphList);
+		p5.add(graphList);
 		
 		graphButton = new JButton("Graph Results");
 		graphButton.setEnabled(false);
@@ -320,9 +318,9 @@ PropertyChangeListener {
 				}
 			}
 		});
-		p4.add(graphButton);
+		p5.add(graphButton);
 
-		add(p4);
+		add(p5);
 
 	}
 
@@ -456,57 +454,6 @@ PropertyChangeListener {
         model.insertRow(table.getRowCount(),new Object[]  {table.getRowCount() + 1,"","","","","","","",""});
     }
 
-	public void repeatTest() {
-		int numRows = table.getRowCount();
-		javax.swing.table.TableModel model = table.getModel();
-		boolean rowsFound = false;
-
-		// Loop through the table values and execute the web service
-		try {
-			while (!repeatButton.isEnabled()) {
-				for (int i = 0; i < numRows; i++) {
-					if (!model.getValueAt(i, 2).equals("")) {
-						rowsFound = true;
-						changeProgressText("Progress: Executing "
-								+ model.getValueAt(i, 2)
-								+ model.getValueAt(i, 3));
-						long startTime = System.nanoTime(); // get the time
-															// before the call
-						ConsumeWebService service = new ConsumeWebService(model
-								.getValueAt(i, 2).toString(), model.getValueAt(
-								i, 3).toString(), model.getValueAt(i, 4)
-								.toString());
-						service.callRestService();
-						long endTime = System.nanoTime(); // get the time after
-															// the call
-						long duration = (endTime - startTime) / 1000000; // get
-																			// the
-																			// duration
-																			// in
-																			// milliseconds
-						String response = service.getWebServiceResponse();
-						model.setValueAt(response, i, 6);
-						if (response.equals(model.getValueAt(i, 5))) {
-							model.setValueAt("Success", i, 7);
-						} else {
-							model.setValueAt("Failed", i, 7);
-						}
-						model.setValueAt(duration, i, 8);
-						// Thread.sleep(500);
-					}
-				}
-
-			}
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
-		if (rowsFound) {
-			changeProgressText("Progress: Complete");
-		} else {
-			changeProgressText("Progress: No endpoints specified");
-		}
-	}
-
     /**
      * Run the test
      */
@@ -517,25 +464,38 @@ PropertyChangeListener {
 
         // Loop through the table values and execute the web service
         try {
-	        for (int i=0; i < numRows; i++) {
-	        	if (!model.getValueAt(i, 2).equals("")) {
-            		rowsFound = true;
-            		changeProgressText("Progress: Executing " + model.getValueAt(i, 2) + model.getValueAt(i, 3));
-            		long startTime = System.nanoTime();  // get the time before the call
-            		ConsumeWebService service = new ConsumeWebService(model.getValueAt(i, 2).toString(), model.getValueAt(i, 3).toString(), model.getValueAt(i, 4).toString());
-            		service.callRestService();
-            		long endTime = System.nanoTime();  // get the time after the call
-            		long duration = (endTime - startTime)/1000000;  // get the duration in milliseconds
-            		String response = service.getWebServiceResponse();
-            		model.setValueAt(response, i, 6);
-            		if(response.equals(model.getValueAt(i, 5))) {
-            			model.setValueAt("Success", i, 7);
-            		} else {
-            			model.setValueAt("Failed", i, 7);
-            		}      
-            		model.setValueAt(duration, i, 8);
-            	}
-	        }
+        	do {
+		        for (int i=0; i < numRows; i++) {
+		        	if (!model.getValueAt(i, 2).equals("")) {
+	            		rowsFound = true;
+	            		changeProgressText("Progress: Executing " + model.getValueAt(i, 2) + model.getValueAt(i, 3));
+	            		long startTime = System.nanoTime();  // get the time before the call
+	            		ConsumeWebService service = new ConsumeWebService(model.getValueAt(i, 2).toString(), model.getValueAt(i, 3).toString(), model.getValueAt(i, 4).toString());
+	            		service.callRestService();
+	            		long endTime = System.nanoTime();  // get the time after the call
+	            		long duration = (endTime - startTime)/1000000;  // get the duration in milliseconds
+	            		String response = service.getWebServiceResponse();
+	            		model.setValueAt(response, i, 6);
+	            		if(response.equals(model.getValueAt(i, 5)) && !response.equals("")) {
+	            			model.setValueAt("Success", i, 7);
+	            		} else {
+	            			model.setValueAt("Failed", i, 7);
+	            		}      
+	            		model.setValueAt(duration, i, 8);
+	            	}
+		        }
+		        if (repeatBox.isSelected()) {
+		        	graphButton.setEnabled(true);
+					graphList.setEnabled(true);
+		        	changeProgressText("Progress: Waiting 1 minute before next test");
+		        	try {
+		        		Thread.sleep(60000);
+		    			initOutputCells();
+		        	} catch (InterruptedException e) {
+		        		break;
+		        	}
+		        }
+        	} while(repeatBox.isSelected() && rowsFound);
         } catch (Exception e) 
         {
         	System.out.println(e.getMessage());
@@ -712,22 +672,6 @@ PropertyChangeListener {
 		public Void doInBackground() {
 			initOutputCells();
 			runTest();
-			return null;
-		}
-
-		public void addPropertyChangeListener(ActionListener actionListener) {
-			// TODO Auto-generated method stub
-
-		}
-	}
-
-	// The SwingWorker framework allows for multi-threading so progress messages
-	// an be updated while the program runs through the test script.
-	class RepeatTest extends SwingWorker<Void, Void> {
-		@Override
-		public Void doInBackground() {
-			initOutputCells();
-			repeatTest();
 			return null;
 		}
 
