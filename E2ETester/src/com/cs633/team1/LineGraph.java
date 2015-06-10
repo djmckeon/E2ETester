@@ -24,23 +24,30 @@ import org.jfree.data.xy.XYSeriesCollection;
 @SuppressWarnings("serial")
 public class LineGraph extends JFrame {
 
-   private XYSeries dataSeries = new XYSeries("Response");
+   private XYSeries dataSeries1 = new XYSeries("Success");
+   private XYSeries dataSeries2 = new XYSeries("Failed");
+   private JFreeChart lineChart;
    
    /**
     * Constructor - define the graph layout
     * @param applicationTitle
     * @param chartTitle
+    * @param isTwoLines
     */
-   public LineGraph( String applicationTitle , String chartTitle )
+   public LineGraph( String applicationTitle, String chartTitle, boolean isTwoLines)
    {
       super(applicationTitle);
-      JFreeChart lineChart = ChartFactory.createXYLineChart(
+      // clear the datasets
+      dataSeries1.clear();
+      dataSeries2.clear();
+      
+      lineChart = ChartFactory.createXYLineChart(
          chartTitle,  				// chart title
          "Test Number",  			// x axis label
          "Response Time (ms)",  	// y axis label
-         createDataset(),  			// data
+         createDataset(isTwoLines), // data
          PlotOrientation.VERTICAL,	// orientation
-         false,  					// include legend
+         isTwoLines,  				// include legend
          false,  					// tooltips
          false);  					// urls
          
@@ -61,22 +68,34 @@ public class LineGraph extends JFrame {
    }
 
    /**
-    * Add a set of values to the dataset (x-coordinate, y-coordinate)
+    * Add a set of values to the success dataset (x-coordinate, y-coordinate)
     * @param xValue
     * @param yValue
     */
-   public void addToDataset(int xValue, int yValue) {
-	   dataSeries.add(xValue, yValue);
+   public void addToDataset1(int xValue, int yValue) {
+	   dataSeries1.add(xValue, yValue);
+   }
+
+   /**
+    * Add a set of values to the failed dataset (x-coordinate, y-coordinate)
+    * @param xValue
+    * @param yValue
+    */
+   public void addToDataset2(int xValue, int yValue) {
+	   dataSeries2.add(xValue, yValue);
    }
 
    /**
     * Create the dataset to be graphed
     * @return XYDataset
     */
-   private XYDataset createDataset( )
+   private XYDataset createDataset(boolean isTwoLines)
    {
        final XYSeriesCollection dataset = new XYSeriesCollection();
-       dataset.addSeries(dataSeries);
+       dataset.addSeries(dataSeries1);
+       if (isTwoLines) {
+    	   dataset.addSeries(dataSeries2);
+       }
        dataset.setAutoWidth(false);
        return dataset;
    }

@@ -3,6 +3,7 @@ package com.cs633.team1;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -65,7 +66,8 @@ PropertyChangeListener {
     static JButton graphButton;
     static JButton runButton;
     static String defaultPath;
-    JButton repeatButton;
+    static JButton repeatButton;
+    static JComboBox graphList;
     
     /**
      * main method - program flow starts here
@@ -83,6 +85,7 @@ PropertyChangeListener {
      * Constructor
      * Initialize 10 rows and define the UI layout.
      */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public E2ETester() {
 		super(new GridLayout(1, 0));
 
@@ -227,8 +230,9 @@ PropertyChangeListener {
 		add(p2); 
 
 		JPanel p3 = new JPanel();
-		p3.setPreferredSize(new Dimension(250, 140));
+		p3.setPreferredSize(new Dimension(250, 80));
 		p3.setBorder(BorderFactory.createLineBorder(Color.black));
+		p3.setBackground(new Color(250, 250, 250));
 
 		// Layout dedicated for buttons
 		FlowLayout layout_b = new FlowLayout(FlowLayout.CENTER, 12, 12);
@@ -247,6 +251,7 @@ PropertyChangeListener {
 			public void actionPerformed(ActionEvent b) {
 				runButton.setEnabled(false);
 				graphButton.setEnabled(false);
+				graphList.setEnabled(false);
 				changeProgressText("Progress: Running test script...");
 				rt = new RunTest();
 				rt.addPropertyChangeListener(this);
@@ -262,6 +267,7 @@ PropertyChangeListener {
 					repeatButton.setEnabled(false);
 					runButton.setEnabled(false);
 					graphButton.setEnabled(false);
+					graphList.setEnabled(false);
 					changeProgressText("Progress: Running test script (repeat)...");
 					repeatt = new RepeatTest();
 					repeatt.addPropertyChangeListener(this);
@@ -271,22 +277,52 @@ PropertyChangeListener {
 					repeatButton.setEnabled(true);
 					runButton.setEnabled(true);
 					graphButton.setEnabled(true);
+					graphList.setEnabled(true);
 				}
 
 			}
 		});
 		p3.add(repeatButton);
 
+		add(p3);
+		
+		// Layout dedicated for graphs
+		JPanel p4 = new JPanel();
+		p4.setPreferredSize(new Dimension(250, 80));
+		p4.setBorder(BorderFactory.createLineBorder(Color.black));
+		p4.setBackground(new Color(250, 250, 250));
+
+		FlowLayout layout_g = new FlowLayout(FlowLayout.CENTER, 12, 12);
+		p4.setLayout(layout_g);
+
+		// Drop-down list of available graphs
+		String[] graphOptions = { "Line Graph - Response Time (All)", "Line Graph - Response Time (By Result)", "Bar Graph - Success/Failure Counts" };
+		graphList = new JComboBox(graphOptions);
+		graphList.setSelectedIndex(0);
+		graphList.addActionListener(this);
+		p4.add(graphList);
+		
 		graphButton = new JButton("Graph Results");
 		graphButton.setEnabled(false);
+		graphList.setEnabled(false);
 		graphButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent c) {
-				graphResults();
+				switch (graphList.getSelectedIndex()) {
+				case 0:
+					graphResponseTime();
+					break;
+				case 1:
+					graphResponseByResult();
+					break;
+				case 2:
+					graphSuccessFailure();
+					break;
+				}
 			}
 		});
-		p3.add(graphButton);
+		p4.add(graphButton);
 
-		add(p3);
+		add(p4);
 
 	}
 
@@ -408,7 +444,7 @@ PropertyChangeListener {
 
 		// Display the window.
 		// frame.pack();
-		frame.setSize(1366, 460);
+		frame.setSize(1366, 410);
 		frame.setVisible(true);
 	}
 
@@ -507,6 +543,7 @@ PropertyChangeListener {
         if (rowsFound) {
         	changeProgressText("Progress: Complete");
         	graphButton.setEnabled(true);
+			graphList.setEnabled(true);
         } else {
         	changeProgressText("Progress: No endpoints specified");
         }
@@ -514,19 +551,19 @@ PropertyChangeListener {
     }
 
     /**
-     * Graph the results
+     * Graph the results of all tests
      */
-    public void graphResults() {
+    public void graphResponseTime() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
         boolean rowsFound = false;
 
-        final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time");
+        final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time", false);
 
         for (int i=0; i < numRows; i++) {
         	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
         		rowsFound = true;
-        		graph.addToDataset(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        		graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
         	}
         }
         if (rowsFound) {
@@ -539,6 +576,70 @@ PropertyChangeListener {
         }
     }
 
+    
+    /**
+     * Graph the results by success or failure
+     */
+    public void graphResponseByResult() {
+        int numRows = table.getRowCount();
+        javax.swing.table.TableModel model = table.getModel();
+        boolean rowsFound = false;
+
+        final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time by Result", true);
+
+        for (int i=0; i < numRows; i++) {
+        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+        		rowsFound = true;
+        		if (model.getValueAt(i, 7).equals("Success")) {
+        			graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        		}
+        		if (model.getValueAt(i, 7).equals("Failed")) {
+        			graph.addToDataset2(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        		}
+        	}
+        }
+        if (rowsFound) {
+	        graph.pack();
+	        RefineryUtilities.centerFrameOnScreen(graph);
+	        graph.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        graph.setVisible(true);
+        } else {
+        	JOptionPane.showMessageDialog(null, "Unable to graph - no valid results found");
+        }
+    }
+    
+    /**
+     * Graph success and failure counts
+     */
+    public void graphSuccessFailure() {
+        int numRows = table.getRowCount();
+        javax.swing.table.TableModel model = table.getModel();
+        boolean rowsFound = false;
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (int i=0; i < numRows; i++) {
+        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+        		rowsFound = true;
+        		if (model.getValueAt(i, 7).equals("Success")) {
+        			successCount++;
+        		}
+        		if (model.getValueAt(i, 7).equals("Failed")) {
+        			failureCount++;
+        		}
+        	}
+        }
+        if (rowsFound) {
+            final BarGraph graph = new BarGraph("End-to-End Webservice Test Framework", "Web Service Success/Failure Counts", successCount, failureCount);
+	        graph.pack();
+	        RefineryUtilities.centerFrameOnScreen(graph);
+	        graph.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	        graph.setVisible(true);
+        } else {
+        	JOptionPane.showMessageDialog(null, "Unable to graph - no valid results found");
+        }
+    }
+    
     /**
      *  Clear any text that may be in the output cells from a previous run
      */
@@ -553,6 +654,7 @@ PropertyChangeListener {
         }    	
 
         graphButton.setEnabled(false);
+		graphList.setEnabled(false);
     }
 
     /**
@@ -570,6 +672,7 @@ PropertyChangeListener {
         }    	
         
         graphButton.setEnabled(false);
+		graphList.setEnabled(false);
     }
 
     /**
@@ -731,6 +834,7 @@ PropertyChangeListener {
         		}
         		if (rowsFound) {
         			graphButton.setEnabled(true);
+    				graphList.setEnabled(true);
         		}
         	} catch (FileNotFoundException e) {
         		e.printStackTrace();
