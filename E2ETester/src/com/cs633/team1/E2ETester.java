@@ -286,7 +286,7 @@ PropertyChangeListener {
 		
 		// Layout dedicated for graphs
 		JPanel p5 = new JPanel();
-		p5.setPreferredSize(new Dimension(250, 80));
+		p5.setPreferredSize(new Dimension(350, 80));
 		p5.setBorder(BorderFactory.createLineBorder(Color.black));
 		p5.setBackground(new Color(250, 250, 250));
 
@@ -477,9 +477,9 @@ PropertyChangeListener {
 	            		String response = service.getWebServiceResponse();
 	            		model.setValueAt(response, i, 6);
 	            		if(response.equals(model.getValueAt(i, 5)) && !response.equals("")) {
-	            			model.setValueAt("Success", i, 7);
+	            			model.setValueAt("<html><font color='green'>Success</font></html>", i, 7);
 	            		} else {
-	            			model.setValueAt("Failed", i, 7);
+	            			model.setValueAt("<html><font color='red'>Failed</font></html>", i, 7);
 	            		}      
 	            		model.setValueAt(duration, i, 8);
 	            	}
