@@ -484,7 +484,7 @@ PropertyChangeListener {
 	            		model.setValueAt(duration, i, 8);
 	            	}
 		        }
-		        if (repeatBox.isSelected()) {
+		        if (repeatBox.isSelected() && rowsFound) {
 		        	graphButton.setEnabled(true);
 					graphList.setEnabled(true);
 		        	changeProgressText("Progress: Waiting 1 minute before next test");
