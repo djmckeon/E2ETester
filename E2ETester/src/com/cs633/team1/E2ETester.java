@@ -5,6 +5,7 @@ import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -30,15 +31,19 @@ import org.jfree.ui.RefineryUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -71,12 +76,15 @@ PropertyChangeListener {
     static String defaultPath;
     static JCheckBox repeatBox;
     static JComboBox graphList;
+    static Preferences preferences;
+    static JDialog preferFrame;
     
     /**
      * main method - program flow starts here
      * @param args
      */
     public static void main(String[] args) {
+    	preferences = new Preferences();  //Load the preferences
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 createAndShowGUI();
@@ -379,6 +387,8 @@ PropertyChangeListener {
         exitAction.setMnemonic(KeyEvent.VK_R);
         JMenuItem clearAllAction = new JMenuItem("Clear All Fields");
         exitAction.setMnemonic(KeyEvent.VK_A);
+        JMenuItem preferencesAction = new JMenuItem("Preferences");
+        exitAction.setMnemonic(KeyEvent.VK_F);
 
 
         fileMenu.add(saveAction);
@@ -391,6 +401,8 @@ PropertyChangeListener {
         editMenu.addSeparator();
         editMenu.add(clearResultsAction);
         editMenu.add(clearAllAction);
+        editMenu.addSeparator();
+        editMenu.add(preferencesAction);
 
         // Add listeners to the menu items
         saveAction.addActionListener(new ActionListener() {
@@ -434,6 +446,14 @@ PropertyChangeListener {
             	}
             }
         });
+        
+        preferencesAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                loadPreferencesUI();
+                preferences.reloadValues();  //Reload the values from the file in case they changed
+            }
+        });
+
 
 		// Create and set up the content pane.
 		E2ETester newContentPane = new E2ETester();
@@ -487,9 +507,9 @@ PropertyChangeListener {
 		        if (repeatBox.isSelected() && rowsFound) {
 		        	graphButton.setEnabled(true);
 					graphList.setEnabled(true);
-		        	changeProgressText("Progress: Waiting 1 minute before next test");
+		        	changeProgressText("Progress: Waiting " + preferences.getLoopWaitCount() + " milliseconds before next test");
 		        	try {
-		        		Thread.sleep(60000);
+		        		Thread.sleep(preferences.getLoopWaitCount());
 		    			initOutputCells();
 		        	} catch (InterruptedException e) {
 		        		break;
@@ -684,7 +704,7 @@ PropertyChangeListener {
     /**
      *  Save the input to a file
      */
-    public static void saveDialogue() {
+    private static void saveDialogue() {
         int numRows = table.getRowCount();
         int numCols = table.getColumnCount();
         String fileRecord;
@@ -693,9 +713,8 @@ PropertyChangeListener {
         final JFileChooser fc = new JFileChooser();
         fc.setAcceptAllFileFilterUsed(false);
         fc.setMultiSelectionEnabled(false);
-        String defaultPath = getDefaultPath();
-        if (!defaultPath.equals("")) {
-        	fc.setCurrentDirectory(new File(defaultPath));
+        if (preferences.getDefaultPath() != null && !preferences.getDefaultPath().isEmpty()) {
+        	fc.setCurrentDirectory(new File(preferences.getDefaultPath()));
         }
         fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
         int retVal = fc.showSaveDialog(frame);
@@ -705,7 +724,7 @@ PropertyChangeListener {
             if (!fileName.endsWith(".e2e")) {
             	fileName = fileName + ".e2e";
             }
-            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+            preferences.setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)), true);  //Save the path so the user doesn't have to navigate to it next time
             try {
 	            FileWriter fstream = new FileWriter(fileName);
 	            BufferedWriter out = new BufferedWriter(fstream);
@@ -734,7 +753,7 @@ PropertyChangeListener {
 	/**
 	 *  Open the input file
 	 */
-    public static void openDialogue() {
+    private static void openDialogue() {
     	BufferedReader br = null;
     	String line = "";
         int numRows = table.getRowCount();
@@ -746,16 +765,15 @@ PropertyChangeListener {
         final JFileChooser fc = new JFileChooser();
         fc.setAcceptAllFileFilterUsed(false);
         fc.setMultiSelectionEnabled(false);
-        String defaultPath = getDefaultPath();
-        if (!defaultPath.equals("")) {
-        	fc.setCurrentDirectory(new File(defaultPath));
+        if (preferences.getDefaultPath() != null && !preferences.getDefaultPath().isEmpty()) {
+        	fc.setCurrentDirectory(new File(preferences.getDefaultPath()));
         }
         fc.setFileFilter(new FileNameExtensionFilter("End-To-End Tester File (*.e2e)", "e2e"));
         int retVal = fc.showOpenDialog(frame);
         if (retVal == JFileChooser.APPROVE_OPTION) {
             File selectedfile = fc.getSelectedFile();
             String fileName = selectedfile.getAbsolutePath();
-            setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)));  //Save the path so the user doesn't have to navigate to it next time
+            preferences.setDefaultPath(fileName.substring(0,fileName.lastIndexOf(File.separator)), true);  //Save the path so the user doesn't have to navigate to it next time
         	try {
         		br = new BufferedReader(new FileReader(fileName));
         		int rowNum = 0;
@@ -797,67 +815,48 @@ PropertyChangeListener {
     	
     }
     
-    /**
-     * Get the default path for the open/save dialogue.
-     * This will anchor the user in the last folder they navigated to.
-     * @return defaultPath
-     */
-    private static String getDefaultPath() {
-    	BufferedReader br = null;
-    	String line = "";
-    	String iniFileName = "E2ETester.ini";
+    private static void loadPreferencesUI() {
+    	//Set the GUI look and feel
     	
-		File iniFile = new File(iniFileName);
-		if (!iniFile.exists()) {
-			defaultPath = "";
-			return defaultPath;
+    	try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
 		}
+    	
+        //Create and set up the window.
+        preferFrame = new JDialog(frame, "Preferences", Dialog.ModalityType.DOCUMENT_MODAL);
+        preferFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        preferFrame.setResizable(false);
+        
+		// Create and set up the content pane.
+		PreferencesUI preferContentPane = new PreferencesUI();
+		preferContentPane.setOpaque(true); // content panes must be opaque
+		preferFrame.setContentPane(preferContentPane);
 
-		try {
-			br = new BufferedReader(new FileReader(iniFileName));
-			line = br.readLine(); 
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-    	} finally {
-    		if (br != null) {
-    			try {
-    				br.close();
-    			} catch (IOException e) {
-    				e.printStackTrace();
-    			}
-    		}
-    	}
-		
-		defaultPath = line;
-		return defaultPath;
-	}
+		preferFrame.setSize(400, 200);
+
+        //Center the preferences window on the screen
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Point middle = new Point(screenSize.width / 2, screenSize.height / 2);
+        Point newLocation = new Point(middle.x - (preferFrame.getWidth() / 2), 
+                                      middle.y - (preferFrame.getHeight() / 2));
+        preferFrame.setLocation(newLocation);
+        
+		// Display the window.
+        preferFrame.setVisible(true);
+
+    	
+    }
     
-    /**
-     * Saves the last path that the user navigated to in the open/save dialogue.
-     * @param path
-     */
-    private static void setDefaultPath(String path) {
-    	String fileName = "E2ETester.ini";
-    	if (defaultPath.equals(path)) {
-    		return;
-    	}
-    	
-    	defaultPath = path;
-    	
-        FileWriter fstream = null;
-		try {
-			fstream = new FileWriter(fileName);
-			BufferedWriter out = new BufferedWriter(fstream);
-			out.write(path);
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
+    public static void closePreferWindow() {
+    	preferFrame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
- }
-
-
+}
