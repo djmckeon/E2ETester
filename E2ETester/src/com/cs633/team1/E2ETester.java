@@ -291,7 +291,7 @@ PropertyChangeListener {
 		
 		// Layout dedicated for graphs
 		JPanel p5 = new JPanel();
-		p5.setPreferredSize(new Dimension(350, 80));
+		p5.setPreferredSize(new Dimension(250, 80));
 		p5.setBorder(BorderFactory.createLineBorder(Color.black));
 		p5.setBackground(new Color(250, 250, 250));
 
