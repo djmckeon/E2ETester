@@ -251,16 +251,28 @@ PropertyChangeListener {
 		p3.setLayout(layout_b);
 
 		JButton addButton = new JButton("Add Row");
+		addButton.setToolTipText("Add a row to the end of the table");
 		addButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent a) {
 				addRow();
 			}
 		});
-		p3.setLayout(new FlowLayout(FlowLayout.CENTER));
 		p3.add(addButton);
+		
+		JButton deleteButton = new JButton("Delete Row");
+		deleteButton.setToolTipText("Delete the last row in the table");
+		deleteButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent d) {
+				deleteRow();
+			}
+		});
+		p3.setLayout(new FlowLayout(FlowLayout.CENTER));
+		p3.add(deleteButton);
+		
 		p4.add(p3);
 
 		runButton = new JButton("Run Test");
+		runButton.setToolTipText("Execute the test block");
 		runButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent b) {
 				runButton.setEnabled(false);
@@ -276,10 +288,13 @@ PropertyChangeListener {
 
 		repeatBox = new JCheckBox("Continuous Test");
 		repeatBox.setSelected(false);
+		repeatBox.setToolTipText("<html>When checked, the test block will repeat indefinitely.  <br>See 'Edit-->Preferences' for settings.  <br>Uncheck the box to stop the test.</html>");
 		repeatBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent c) {
 				if (!repeatBox.isSelected()) {
-					rt.cancel(true);  // Allow the Sleep to terminate if the check box is unchecked
+					if (rt != null && !rt.isDone()) {
+						rt.cancel(true);  // Allow the Sleep to terminate if the check box is unchecked
+					}
 				}
 			}
 		}
@@ -306,10 +321,11 @@ PropertyChangeListener {
 		p5.add(graphList);
 		
 		graphButton = new JButton("Graph Results");
+		graphButton.setToolTipText("Graph the results based on the option selected in the above drop-down");
 		graphButton.setEnabled(false);
 		graphList.setEnabled(false);
 		graphButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent c) {
+			public void actionPerformed(ActionEvent g) {
 				switch (graphList.getSelectedIndex()) {
 				case 0:
 					graphResponseTime();
@@ -472,12 +488,24 @@ PropertyChangeListener {
     }
 
     /**
+     * Delete the last row from the table
+     */
+    public static void deleteRow() {
+        DefaultTableModel model = (DefaultTableModel)table.getModel();
+        model.removeRow((model.getRowCount() - 1));
+    }
+
+    /**
      * Run the test
      */
     public void runTest() {
         int numRows = table.getRowCount();
         javax.swing.table.TableModel model = table.getModel();
         boolean rowsFound = false;
+        String response = "";
+        long startTime = 0;
+        long endTime = 0;
+        long duration = 0;
 
         // Loop through the table values and execute the web service
         try {
@@ -486,12 +514,16 @@ PropertyChangeListener {
 		        	if (!model.getValueAt(i, 2).equals("")) {
 	            		rowsFound = true;
 	            		changeProgressText("Progress: Executing " + model.getValueAt(i, 2) + model.getValueAt(i, 3));
-	            		long startTime = System.nanoTime();  // get the time before the call
-	            		ConsumeWebService service = new ConsumeWebService(model.getValueAt(i, 2).toString(), model.getValueAt(i, 3).toString(), model.getValueAt(i, 4).toString());
-	            		service.callRestService();
-	            		long endTime = System.nanoTime();  // get the time after the call
-	            		long duration = (endTime - startTime)/1000000;  // get the duration in milliseconds
-	            		String response = service.getWebServiceResponse();
+	            		startTime = System.nanoTime();  // get the time before the call
+	            		try {
+	            			ConsumeWebService service = new ConsumeWebService(model.getValueAt(i, 2).toString(), model.getValueAt(i, 3).toString(), model.getValueAt(i, 4).toString());
+	            			service.callRestService();
+		            		endTime = System.nanoTime();  // get the time after the call
+		            		duration = (endTime - startTime)/1000000;  // get the duration in milliseconds
+		            		response = service.getWebServiceResponse();
+	            		} catch (Exception e) {
+	            			response = "Error";
+	            		}
 	            		model.setValueAt(response, i, 6);
 	            		if(response.equals(model.getValueAt(i, 5)) && !response.equals("")) {
 	            			model.setValueAt("<html><font color='green'>Success</font></html>", i, 7);

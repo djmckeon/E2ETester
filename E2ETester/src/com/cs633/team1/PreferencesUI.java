@@ -27,7 +27,7 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 		p1.setPreferredSize(new Dimension(325, 40));
 		p1.setLayout(new FlowLayout(FlowLayout.CENTER));
 		
-		JTextField titleText = new JTextField("Continuous Run Preferences");
+		JTextField titleText = new JTextField("Continuous Test Preferences");
 		titleText.setFont(new Font("Sans Serif", Font.BOLD, 14));
 		titleText.setEditable(false);
 		titleText.setBorder(null);
