@@ -28,15 +28,12 @@ import javax.swing.text.DefaultEditorKit;
 
 import org.jfree.ui.RefineryUtilities;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -49,7 +46,6 @@ import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -75,7 +71,8 @@ PropertyChangeListener {
     static JButton runButton;
     static String defaultPath;
     static JCheckBox repeatBox;
-    static JComboBox graphList;
+    @SuppressWarnings("rawtypes")
+	static JComboBox graphList;
     static Preferences preferences;
     static JDialog preferFrame;
     
@@ -294,7 +291,7 @@ PropertyChangeListener {
 		
 		// Layout dedicated for graphs
 		JPanel p5 = new JPanel();
-		p5.setPreferredSize(new Dimension(250, 80));
+		p5.setPreferredSize(new Dimension(350, 80));
 		p5.setBorder(BorderFactory.createLineBorder(Color.black));
 		p5.setBackground(new Color(250, 250, 250));
 
@@ -497,9 +494,9 @@ PropertyChangeListener {
 	            		String response = service.getWebServiceResponse();
 	            		model.setValueAt(response, i, 6);
 	            		if(response.equals(model.getValueAt(i, 5)) && !response.equals("")) {
-	            			model.setValueAt("Success", i, 7);
+	            			model.setValueAt("<html><font color='green'>Success</font></html>", i, 7);
 	            		} else {
-	            			model.setValueAt("Failed", i, 7);
+	            			model.setValueAt("<html><font color='red'>Failed</font></html>", i, 7);
 	            		}      
 	            		model.setValueAt(duration, i, 8);
 	            	}
@@ -757,7 +754,6 @@ PropertyChangeListener {
     	BufferedReader br = null;
     	String line = "";
         int numRows = table.getRowCount();
-        int numCols = table.getColumnCount();
         boolean rowsFound = false;
         javax.swing.table.TableModel model = table.getModel();
 
