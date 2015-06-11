@@ -599,10 +599,10 @@ PropertyChangeListener {
         for (int i=0; i < numRows; i++) {
         	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
         		rowsFound = true;
-        		if (model.getValueAt(i, 7).equals("Success")) {
+        		if (model.getValueAt(i, 7).toString().contains("Success")) {
         			graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
         		}
-        		if (model.getValueAt(i, 7).equals("Failed")) {
+        		if (model.getValueAt(i, 7).toString().contains("Failed")) {
         			graph.addToDataset2(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
         		}
         	}
@@ -630,10 +630,10 @@ PropertyChangeListener {
         for (int i=0; i < numRows; i++) {
         	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
         		rowsFound = true;
-        		if (model.getValueAt(i, 7).equals("Success")) {
+        		if (model.getValueAt(i, 7).toString().contains("Success")) {
         			successCount++;
         		}
-        		if (model.getValueAt(i, 7).equals("Failed")) {
+        		if (model.getValueAt(i, 7).toString().contains("Failed")) {
         			failureCount++;
         		}
         	}
