@@ -492,7 +492,9 @@ PropertyChangeListener {
      */
     public static void deleteRow() {
         DefaultTableModel model = (DefaultTableModel)table.getModel();
-        model.removeRow((model.getRowCount() - 1));
+        if (model.getRowCount() > 1) {
+        	model.removeRow((model.getRowCount() - 1));
+        }
     }
 
     /**
