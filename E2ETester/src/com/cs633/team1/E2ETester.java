@@ -31,6 +31,7 @@ import org.jfree.ui.RefineryUtilities;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -51,6 +52,11 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * End-to-End RESTful web service tester
@@ -63,21 +69,22 @@ import java.io.IOException;
 @SuppressWarnings("serial")
 public class E2ETester extends JPanel implements ActionListener,
 PropertyChangeListener {
-	static JFrame frame;
-    static JTable table;
-    JTextField progressText;
-    JPanel p2;
+	private static JFrame frame;
+    private static JTable table;
+    private JTextField progressText;
+    private JPanel p2;
     private RunTest rt;
-    static JButton graphButton;
-    static JButton runButton;
-    static JButton addButton;
-    static JButton deleteButton;
-    static String defaultPath;
-    static JCheckBox repeatBox;
+    private static JButton graphButton;
+    private static JButton runButton;
+    private static JButton addButton;
+    private static JButton deleteButton;
+    private static JCheckBox repeatBox;
     @SuppressWarnings("rawtypes")
-	static JComboBox graphList;
-    static Preferences preferences;
-    static JDialog preferFrame;
+    private static JComboBox graphList;
+    private static Preferences preferences;
+    private static JDialog preferFrame;
+    private int numOfOriginalRows;
+
     
     /**
      * main method - program flow starts here
@@ -381,8 +388,11 @@ PropertyChangeListener {
         fileMenu.setMnemonic(KeyEvent.VK_F);
         JMenu editMenu = new JMenu("Edit");
         editMenu.setMnemonic(KeyEvent.VK_E);
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.setMnemonic(KeyEvent.VK_H);
         menuBar.add(fileMenu);
         menuBar.add(editMenu);
+        menuBar.add(helpMenu);
          
         // Create and add simple menu item to one of the drop down menu
         JMenuItem saveAction = new JMenuItem("Save     ");
@@ -408,6 +418,8 @@ PropertyChangeListener {
         JMenuItem preferencesAction = new JMenuItem("Preferences");
         exitAction.setMnemonic(KeyEvent.VK_F);
 
+        JMenuItem helpAction = new JMenuItem("User Guide     ");
+        helpAction.setMnemonic(KeyEvent.VK_U);
 
         fileMenu.add(saveAction);
         fileMenu.add(openAction);
@@ -421,6 +433,7 @@ PropertyChangeListener {
         editMenu.add(clearAllAction);
         editMenu.addSeparator();
         editMenu.add(preferencesAction);
+        helpMenu.add(helpAction);
 
         // Add listeners to the menu items
         saveAction.addActionListener(new ActionListener() {
@@ -472,7 +485,15 @@ PropertyChangeListener {
             }
         });
 
+        helpAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+            	//Open the online user guide
+            	try {
+            	    Desktop.getDesktop().browse(new URL("http://E2ETester.hushmoss.com/E2ETester_UserGuide.pdf").toURI());
+            	} catch (Exception e) {}            }
+        });
 
+        
 		// Create and set up the content pane.
 		E2ETester newContentPane = new E2ETester();
 		newContentPane.setOpaque(true); // content panes must be opaque
@@ -514,7 +535,6 @@ PropertyChangeListener {
         long endTime = 0;
         long duration = 0;
         int i = 0;
-        int numOfOriginalRows = 0;
         int numRowsOccupied = 0;
 
         //Figure out how many rows are occupied.  We will need that number for the continuous test.
@@ -523,6 +543,26 @@ PropertyChangeListener {
         		numOfOriginalRows = j + 1;
         		break;
         	}
+        }
+        
+        //Before we run the test, let's loop through the table and make sure all required fields are present
+        for (int n = 0; n < numRows; n++) {
+        	if (!model.getValueAt(i, 2).equals("")) {
+        		if (model.getValueAt(i, 4).equals("")) {
+                	JOptionPane.showMessageDialog(null, "XML Tag values missing - Please correct and try again");
+                    runButton.setEnabled(true);
+                    addButton.setEnabled(true);
+                    deleteButton.setEnabled(true);
+                	return;
+        		}
+        		if (model.getValueAt(i, 5).equals("")) {
+                	JOptionPane.showMessageDialog(null, "Expected Response values missing - Please correct and try again");
+                    runButton.setEnabled(true);
+                    addButton.setEnabled(true);
+                    deleteButton.setEnabled(true);
+                	return;
+        		}
+        	}        	
         }
         
         // Loop through the table values and execute the web service
@@ -566,7 +606,7 @@ PropertyChangeListener {
 		        	}
 		        	//Repeat the test block for the next run if that setting is present
 		        	if (!preferences.isRewriteResults()) {
-		        		repeatTestBlock(numOfOriginalRows, numRowsOccupied);
+		        		repeatTestBlock(numRowsOccupied);
 		        		numRows = table.getRowCount();
 		        		i = numRowsOccupied;
 		        	} else {
@@ -594,7 +634,7 @@ PropertyChangeListener {
      * Repeat the original test block so we can loop through it again.
      * @param numOfOriginalRows
      */
-    private void repeatTestBlock(int numOfOriginalRows, int numRowsOccupied) {
+    private void repeatTestBlock(int numRowsOccupied) {
         int numRows = table.getRowCount();
         int nextRowNum = numRowsOccupied + 1;
         TableModel model = table.getModel();
@@ -627,14 +667,51 @@ PropertyChangeListener {
         int numRows = table.getRowCount();
         TableModel model = table.getModel();
         boolean rowsFound = false;
+        int averageIndex = 0;
+    	List<AverageResponse> responseList = new ArrayList<AverageResponse>();
 
         final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time", false);
 
-        for (int i=0; i < numRows; i++) {
-        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
-        		rowsFound = true;
-        		graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        //Average the response times before graphing
+        if (preferences.isAverageGraph() && numRows > numOfOriginalRows) {
+        	for (int i = 0; i < numRows; i++) {
+        		if (i < numOfOriginalRows) {
+        			if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+	        			rowsFound = true;
+        				AverageResponse average = new AverageResponse();
+	        			average.setTestNum(i + 1);
+	        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
+	        			responseList.add(average);
+        			}
+        		} else {
+        			if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {        			
+        				averageIndex = i - ((i / numOfOriginalRows) * numOfOriginalRows); 
+	        			rowsFound = true;
+        				AverageResponse average = responseList.get(averageIndex);
+	        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
+	        			responseList.add(average);
+        			}
+        		}
         	}
+        }
+        
+        //Graph the results
+        if (preferences.isAverageGraph() && numRows > numOfOriginalRows) {
+        	if (rowsFound) {
+        		Iterator<AverageResponse> it = responseList.iterator();
+        		while (it.hasNext()) {
+        			AverageResponse average = it.next();
+        			graph.addToDataset1(average.getTestNum(), average.getAvgResponse());
+        		}
+        	}
+        	
+        } else {        
+	        for (int i=0; i < numRows; i++) {
+	        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+	        		rowsFound = true;
+	        		graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+	        	}
+	        }
         }
         if (rowsFound) {
 	        graph.pack();
@@ -654,20 +731,83 @@ PropertyChangeListener {
         int numRows = table.getRowCount();
         TableModel model = table.getModel();
         boolean rowsFound = false;
+        int averageIndex = 0;
+    	List<AverageResponse> successList = new ArrayList<AverageResponse>();
+    	List<AverageResponse> failedList = new ArrayList<AverageResponse>();
 
         final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time by Result", true);
 
-        for (int i=0; i < numRows; i++) {
-        	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
-        		rowsFound = true;
-        		if (model.getValueAt(i, 7).toString().contains("Success")) {
-        			graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
-        		}
-        		if (model.getValueAt(i, 7).toString().contains("Failed")) {
-        			graph.addToDataset2(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+        //Average the response times before graphing
+        if (preferences.isAverageGraph() && numRows > numOfOriginalRows) {
+        	for (int i = 0; i < numRows; i++) {
+        		if (i < numOfOriginalRows) {
+        			if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+	        			rowsFound = true;
+        				AverageResponse average = new AverageResponse();
+	        			average.setTestNum(i + 1);
+	        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
+	        			if (model.getValueAt(i, 7).toString().contains("Success")) {
+	        				successList.add(average);
+	        				failedList.add(new AverageResponse());  //Add in a dummy object as a placeholder
+	        			} 
+	        			if (model.getValueAt(i, 7).toString().contains("Failed")) {
+	        				failedList.add(average);
+	        				successList.add(new AverageResponse());  //Add in a dummy object as a placeholder
+	        			} 
+        			}
+        		} else {
+        			if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {        			
+        				averageIndex = i - ((i / numOfOriginalRows) * numOfOriginalRows); 
+	        			rowsFound = true;
+	        			if (model.getValueAt(i, 7).toString().contains("Success")) {
+	        				AverageResponse average = successList.get(averageIndex);
+		        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
+		        			successList.add(average);
+	        			}
+	        			if (model.getValueAt(i, 7).toString().contains("Failed")) {
+	        				AverageResponse average = failedList.get(averageIndex);
+		        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
+		        			failedList.add(average);
+	        			}
+        			}
         		}
         	}
         }
+
+        //Graph the results
+        if (preferences.isAverageGraph() && numRows > numOfOriginalRows) {
+        	if (rowsFound) {
+        		Iterator<AverageResponse> it = successList.iterator();
+        		while (it.hasNext()) {
+        			AverageResponse average = it.next();
+        			if (average.getNumRuns() > 0) {
+        				graph.addToDataset1(average.getTestNum(), average.getAvgResponse());
+        			}
+        		}
+
+        		Iterator<AverageResponse> it2 = failedList.iterator();
+        		while (it2.hasNext()) {
+        			AverageResponse average = it2.next();
+        			if (average.getNumRuns() > 0) {
+        				graph.addToDataset2(average.getTestNum(), average.getAvgResponse());
+        			}
+        		}
+}
+        	
+        } else {        
+            for (int i=0; i < numRows; i++) {
+            	if (model.getValueAt(i, 8) != null && !model.getValueAt(i, 8).equals("")) {
+            		rowsFound = true;
+            		if (model.getValueAt(i, 7).toString().contains("Success")) {
+            			graph.addToDataset1(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+            		}
+            		if (model.getValueAt(i, 7).toString().contains("Failed")) {
+            			graph.addToDataset2(Integer.parseInt(model.getValueAt(i, 0).toString()), Integer.parseInt(model.getValueAt(i, 8).toString()));
+            		}
+            	}
+            }
+        }
+
         if (rowsFound) {
 	        graph.pack();
 	        RefineryUtilities.centerFrameOnScreen(graph);
@@ -929,7 +1069,7 @@ PropertyChangeListener {
 		preferContentPane.setOpaque(true); // content panes must be opaque
 		preferFrame.setContentPane(preferContentPane);
 
-		preferFrame.setSize(400, 200);
+		preferFrame.setSize(400, 215);
 
         //Center the preferences window on the screen
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();

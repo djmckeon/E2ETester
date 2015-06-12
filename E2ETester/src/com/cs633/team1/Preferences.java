@@ -19,6 +19,7 @@ public class Preferences {
 	private String defaultPath;
 	private int loopWaitCount;
 	private boolean rewriteResults;
+	private boolean averageGraph;
 	private String iniFileName;
 	
 	/**
@@ -66,6 +67,9 @@ public class Preferences {
     			case "RewriteResults":
     				this.setRewriteResults(Boolean.parseBoolean(nameValuePair[1]), false);
     				break;
+    			case "AverageGraph":
+    				this.setAverageGraph(Boolean.parseBoolean(nameValuePair[1]), false);
+    				break;
     			}
 			}
 		} catch (FileNotFoundException e) {
@@ -93,6 +97,7 @@ public class Preferences {
 		this.setDefaultPath(chooser.getCurrentDirectory().getAbsolutePath(), false);
 		this.setLoopWaitCount(60000, false);  //Default to 60 seconds
 		this.setRewriteResults(true, false);  //Default to rewriting the test results
+		this.setAverageGraph(true, false);  //Default to averaging response times for graphs
 		
 		writeIniFile();
 	}
@@ -107,6 +112,8 @@ public class Preferences {
 			out.write("LoopWaitCount=" + this.getLoopWaitCount());
 			out.newLine();
 			out.write("RewriteResults=" + this.isRewriteResults());
+			out.newLine();
+			out.write("AverageGraph=" + this.isAverageGraph());
 			out.newLine();
 			out.close();
 		} catch (IOException e) {
@@ -167,6 +174,19 @@ public class Preferences {
 
 	public void setIniFileName(String iniFileName) {
 		this.iniFileName = iniFileName;
+	}
+
+	public boolean isAverageGraph() {
+		return averageGraph;
+	}
+
+	public void setAverageGraph(boolean averageGraph, boolean rewriteFile) {
+		if (this.averageGraph != averageGraph) {
+			this.averageGraph = averageGraph;
+			if (rewriteFile) {
+				writeIniFile();
+			}
+		}
 	}
 	
 }

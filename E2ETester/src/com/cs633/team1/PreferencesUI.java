@@ -35,7 +35,7 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 		add(p1);
 		
 		JPanel p2 = new JPanel();
-		p2.setPreferredSize(new Dimension(275, 70));
+		p2.setPreferredSize(new Dimension(275, 85));
 		p2.setBorder(BorderFactory.createLineBorder(Color.gray));
 		p2.setLayout(new FlowLayout(FlowLayout.LEFT));
 
@@ -43,6 +43,7 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 		JTextField loopCount = new JTextField(String.valueOf(preferences.getLoopWaitCount()), 10);
 		JTextField loopWaitText2 = new JTextField(" ms");
 		
+		loopCount.setToolTipText("<html>This is the amount of time the application will wait<br>prior to initiating the next test run.</html>");
 		loopWaitText.setEditable(false);
 		loopWaitText.setBorder(null);
 		loopWaitText2.setEditable(false);
@@ -52,15 +53,18 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 		p2.add(loopCount);
 		p2.add(loopWaitText2);
 
-		JCheckBox rewriteResults = new JCheckBox();
+		JCheckBox rewriteResults = new JCheckBox("Rewrite previous run's results");
 		rewriteResults.setSelected(preferences.isRewriteResults());
-		JTextField rewriteText = new JTextField(" Rewrite previous run's results");
-		rewriteText.setEditable(false);
-		rewriteText.setBorder(null);
+		rewriteResults.setToolTipText("<html>When checked, this setting will cause continuous test runs to replace the data from the previous run.<br>Uncheck this box to retain all runs' data and automatically expand the test table.</html>");
 		
 		p2.add(rewriteResults);
-		p2.add(rewriteText);
+
+		JCheckBox averageGraph = new JCheckBox("Average response times when graphing");
+		averageGraph.setSelected(preferences.isAverageGraph());
+		averageGraph.setToolTipText("<html>When checked, this setting will average the results from each test prior to graphing.<br>Uncheck this box to graph the results from each test.<br>Note: This only applies to the line graphs.</html>");
 		
+		p2.add(averageGraph);
+
 		add(p2);
 
 		JPanel p3 = new JPanel();
@@ -75,6 +79,7 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 				try {
 					preferences.setLoopWaitCount(Integer.parseInt(loopCount.getText()), true);
 					preferences.setRewriteResults(rewriteResults.isSelected(), true);
+					preferences.setAverageGraph(averageGraph.isSelected(), true);
 					E2ETester.closePreferWindow();
 				} catch (NumberFormatException e) {
 		        	JOptionPane.showMessageDialog(null, "Loop count is not numeric - please correct");
