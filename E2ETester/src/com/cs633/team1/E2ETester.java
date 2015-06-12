@@ -24,6 +24,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
 import javax.swing.text.DefaultEditorKit;
 
 import org.jfree.ui.RefineryUtilities;
@@ -69,6 +70,8 @@ PropertyChangeListener {
     private RunTest rt;
     static JButton graphButton;
     static JButton runButton;
+    static JButton addButton;
+    static JButton deleteButton;
     static String defaultPath;
     static JCheckBox repeatBox;
     @SuppressWarnings("rawtypes")
@@ -250,7 +253,7 @@ PropertyChangeListener {
 		FlowLayout layout_b = new FlowLayout(FlowLayout.CENTER, 12, 12);
 		p3.setLayout(layout_b);
 
-		JButton addButton = new JButton("Add Row");
+		addButton = new JButton("Add Row");
 		addButton.setToolTipText("Add a row to the end of the table");
 		addButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent a) {
@@ -259,7 +262,7 @@ PropertyChangeListener {
 		});
 		p3.add(addButton);
 		
-		JButton deleteButton = new JButton("Delete Row");
+		deleteButton = new JButton("Delete Row");
 		deleteButton.setToolTipText("Delete the last row in the table");
 		deleteButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent d) {
@@ -278,6 +281,8 @@ PropertyChangeListener {
 				runButton.setEnabled(false);
 				graphButton.setEnabled(false);
 				graphList.setEnabled(false);
+				addButton.setEnabled(false);
+				deleteButton.setEnabled(false);
 				changeProgressText("Progress: Running test script...");
 				rt = new RunTest();
 				rt.addPropertyChangeListener(this);
@@ -502,18 +507,30 @@ PropertyChangeListener {
      */
     public void runTest() {
         int numRows = table.getRowCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
         boolean rowsFound = false;
         String response = "";
         long startTime = 0;
         long endTime = 0;
         long duration = 0;
+        int i = 0;
+        int numOfOriginalRows = 0;
+        int numRowsOccupied = 0;
 
+        //Figure out how many rows are occupied.  We will need that number for the continuous test.
+        for (int j = (numRows - 1); j >= 0; j--) {
+        	if (!model.getValueAt(j, 2).equals("")) {
+        		numOfOriginalRows = j + 1;
+        		break;
+        	}
+        }
+        
         // Loop through the table values and execute the web service
         try {
         	do {
-		        for (int i=0; i < numRows; i++) {
+		        for (; i < numRows; i++) {
 		        	if (!model.getValueAt(i, 2).equals("")) {
+		        		numRowsOccupied++;
 	            		rowsFound = true;
 	            		changeProgressText("Progress: Executing " + model.getValueAt(i, 2) + model.getValueAt(i, 3));
 	            		startTime = System.nanoTime();  // get the time before the call
@@ -541,9 +558,19 @@ PropertyChangeListener {
 		        	changeProgressText("Progress: Waiting " + preferences.getLoopWaitCount() + " milliseconds before next test");
 		        	try {
 		        		Thread.sleep(preferences.getLoopWaitCount());
-		    			initOutputCells();
+		        		if (preferences.isRewriteResults()) {
+		        			initOutputCells();
+		        		}
 		        	} catch (InterruptedException e) {
 		        		break;
+		        	}
+		        	//Repeat the test block for the next run if that setting is present
+		        	if (!preferences.isRewriteResults()) {
+		        		repeatTestBlock(numOfOriginalRows, numRowsOccupied);
+		        		numRows = table.getRowCount();
+		        		i = numRowsOccupied;
+		        	} else {
+		        		i = 0;
 		        	}
 		        }
         	} while(repeatBox.isSelected() && rowsFound);
@@ -559,6 +586,38 @@ PropertyChangeListener {
         	changeProgressText("Progress: No endpoints specified");
         }
         runButton.setEnabled(true);
+        addButton.setEnabled(true);
+        deleteButton.setEnabled(true);
+    }
+    
+    /**
+     * Repeat the original test block so we can loop through it again.
+     * @param numOfOriginalRows
+     */
+    private void repeatTestBlock(int numOfOriginalRows, int numRowsOccupied) {
+        int numRows = table.getRowCount();
+        int nextRowNum = numRowsOccupied + 1;
+        TableModel model = table.getModel();
+        
+        for (int i = 0; i < numOfOriginalRows; i++) {
+        	//If there aren't enough rows, add one
+        	if (numRowsOccupied >= numRows) {
+        		addRow();
+        		numRows++;
+        	}
+        	model.setValueAt(nextRowNum, numRowsOccupied, 0);
+        	model.setValueAt(model.getValueAt(i, 1), numRowsOccupied, 1);
+        	model.setValueAt(model.getValueAt(i, 2), numRowsOccupied, 2);
+        	model.setValueAt(model.getValueAt(i, 3), numRowsOccupied, 3);
+        	model.setValueAt(model.getValueAt(i, 4), numRowsOccupied, 4);
+        	model.setValueAt(model.getValueAt(i, 5), numRowsOccupied, 5);
+        	model.setValueAt("", numRowsOccupied, 6);
+        	model.setValueAt("", numRowsOccupied, 7);
+        	model.setValueAt("", numRowsOccupied, 8);
+        	nextRowNum++; 
+        	numRowsOccupied++;
+        }
+
     }
 
     /**
@@ -566,7 +625,7 @@ PropertyChangeListener {
      */
     public void graphResponseTime() {
         int numRows = table.getRowCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
         boolean rowsFound = false;
 
         final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time", false);
@@ -593,7 +652,7 @@ PropertyChangeListener {
      */
     public void graphResponseByResult() {
         int numRows = table.getRowCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
         boolean rowsFound = false;
 
         final LineGraph graph = new LineGraph("End-to-End Webservice Test Framework", "Web Service Response Time by Result", true);
@@ -624,7 +683,7 @@ PropertyChangeListener {
      */
     public void graphSuccessFailure() {
         int numRows = table.getRowCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
         boolean rowsFound = false;
         int successCount = 0;
         int failureCount = 0;
@@ -656,7 +715,7 @@ PropertyChangeListener {
      */
     public static void initOutputCells() {
         int numRows = table.getRowCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
 
         for (int i=0; i < numRows; i++) {
         	model.setValueAt("", i, 6);
@@ -674,7 +733,7 @@ PropertyChangeListener {
     public static void initAllCells() {
         int numRows = table.getRowCount();
         int numCols = table.getColumnCount();
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
 
         for (int i=0; i < numRows; i++) {
         	for (int j=1; j < numCols; j++) {  //Don't clear the first column
@@ -739,7 +798,7 @@ PropertyChangeListener {
         int numRows = table.getRowCount();
         int numCols = table.getColumnCount();
         String fileRecord;
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
 
         final JFileChooser fc = new JFileChooser();
         fc.setAcceptAllFileFilterUsed(false);
@@ -789,7 +848,7 @@ PropertyChangeListener {
     	String line = "";
         int numRows = table.getRowCount();
         boolean rowsFound = false;
-        javax.swing.table.TableModel model = table.getModel();
+        TableModel model = table.getModel();
 
     	
         final JFileChooser fc = new JFileChooser();
