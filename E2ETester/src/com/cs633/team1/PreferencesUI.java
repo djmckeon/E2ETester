@@ -77,10 +77,14 @@ public class PreferencesUI extends JPanel implements ActionListener, PropertyCha
 			public void actionPerformed(ActionEvent a) {
 				//Make sure the loop count is numeric before saving
 				try {
-					preferences.setLoopWaitCount(Integer.parseInt(loopCount.getText()), true);
-					preferences.setRewriteResults(rewriteResults.isSelected(), true);
-					preferences.setAverageGraph(averageGraph.isSelected(), true);
-					E2ETester.closePreferWindow();
+					if (Integer.parseInt(loopCount.getText()) < 0) {
+			        	JOptionPane.showMessageDialog(null, "Loop count cannot be negative - please correct");
+					} else {
+						preferences.setLoopWaitCount(Integer.parseInt(loopCount.getText()), true);
+						preferences.setRewriteResults(rewriteResults.isSelected(), true);
+						preferences.setAverageGraph(averageGraph.isSelected(), true);
+						E2ETester.closePreferWindow();
+					}
 				} catch (NumberFormatException e) {
 		        	JOptionPane.showMessageDialog(null, "Loop count is not numeric - please correct");
 				}
