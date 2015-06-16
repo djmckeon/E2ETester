@@ -56,7 +56,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * End-to-End RESTful web service tester
@@ -83,7 +82,7 @@ PropertyChangeListener {
     private static JComboBox graphList;
     private static Preferences preferences;
     private static JDialog preferFrame;
-    private int numOfOriginalRows;
+    private static int numOfOriginalRows;
 
     
     /**
@@ -987,7 +986,7 @@ PropertyChangeListener {
     	BufferedReader br = null;
     	String line = "";
         int numRows = table.getRowCount();
-        boolean rowsFound = false;
+        boolean resultsFound = false;
         TableModel model = table.getModel();
 
     	
@@ -1006,26 +1005,47 @@ PropertyChangeListener {
         	try {
         		br = new BufferedReader(new FileReader(fileName));
         		int rowNum = 0;
+        		numOfOriginalRows = 0;  //Track the number of rows in the file so the average graphs will work
         		while ((line = br.readLine()) != null) {
         			// If the saved file has more rows than what is currently on the screen, add a row
         			if (rowNum >= numRows) {
         				addRow();
         			}
-        			String[] tableColumns = line.split(",");  // use comma as separator
-        			for (int i=0; i < tableColumns.length; i++) {
-        				model.setValueAt(tableColumns[i], rowNum, i);
-        				
-        			}
-        			if (!rowsFound) {  // see if we should enable the graph button
-        				if (!model.getValueAt(rowNum, 6).equals("") && !model.getValueAt(rowNum, 7).equals("") && !model.getValueAt(rowNum, 8).equals("")) {
-        					rowsFound = true;
-        				}
+        			if (!line.equals("")) {
+	        			String[] tableColumns = line.split(",", -1);  // use comma as separator and include the blanks
+	        			if (tableColumns.length != 9) {
+	                    	if (rowNum > 0) {
+	                    		initAllCells();
+	                    		rowNum = 10; //Set it to the default number of rows
+	                    	}
+	                    	JOptionPane.showMessageDialog(null, selectedfile.getName() + " is not properly formatted");
+	                    	break;
+	        			} else {
+		        			for (int i = 0; i < tableColumns.length; i++) {
+		        				model.setValueAt(tableColumns[i], rowNum, i);
+		        			}
+		        			if (!model.getValueAt(rowNum, 2).equals("")) {
+		        				numOfOriginalRows++;  //If there is an endpoint, consider it a populated row 
+		        			}
+	        				if (!model.getValueAt(rowNum, 6).equals("") && !model.getValueAt(rowNum, 7).equals("") && !model.getValueAt(rowNum, 8).equals("")) {
+	        					resultsFound = true;
+	        				}
+	        			}
         			}
         			rowNum++;
         		}
-        		if (rowsFound) {
+        		//If the loaded file has fewer rows than the table, delete the excess rows
+        		if (model.getRowCount() > rowNum) {
+        			for (int i = model.getRowCount(); i > rowNum; i--) {
+        				deleteRow();
+        			}
+        		}
+        		if (resultsFound) {
         			graphButton.setEnabled(true);
     				graphList.setEnabled(true);
+        		} else {
+        			graphButton.setEnabled(false);
+    				graphList.setEnabled(false);
         		}
         	} catch (FileNotFoundException e) {
         		e.printStackTrace();
