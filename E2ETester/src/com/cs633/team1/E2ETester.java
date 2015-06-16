@@ -1017,6 +1017,8 @@ PropertyChangeListener {
 	                    	if (rowNum > 0) {
 	                    		initAllCells();
 	                    		rowNum = 10; //Set it to the default number of rows
+	                    	} else {
+	                    		rowNum = model.getRowCount();
 	                    	}
 	                    	JOptionPane.showMessageDialog(null, selectedfile.getName() + " is not properly formatted");
 	                    	break;
