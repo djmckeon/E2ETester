@@ -546,15 +546,15 @@ PropertyChangeListener {
         
         //Before we run the test, let's loop through the table and make sure all required fields are present
         for (int n = 0; n < numRows; n++) {
-        	if (!model.getValueAt(i, 2).equals("")) {
-        		if (model.getValueAt(i, 4).equals("")) {
+        	if (!model.getValueAt(n, 2).equals("")) {
+        		if (model.getValueAt(n, 4).equals("")) {
                 	JOptionPane.showMessageDialog(null, "XML Tag values missing - Please correct and try again");
                     runButton.setEnabled(true);
                     addButton.setEnabled(true);
                     deleteButton.setEnabled(true);
                 	return;
         		}
-        		if (model.getValueAt(i, 5).equals("")) {
+        		if (model.getValueAt(n, 5).equals("")) {
                 	JOptionPane.showMessageDialog(null, "Expected Response values missing - Please correct and try again");
                     runButton.setEnabled(true);
                     addButton.setEnabled(true);
@@ -583,7 +583,7 @@ PropertyChangeListener {
 	            			response = "Error";
 	            		}
 	            		model.setValueAt(response, i, 6);
-	            		if(response.equals(model.getValueAt(i, 5)) && !response.equals("")) {
+	            		if(response.equalsIgnoreCase(model.getValueAt(i, 5).toString()) && !response.equals("")) {
 	            			model.setValueAt("<html><font color='green'>Success</font></html>", i, 7);
 	            		} else {
 	            			model.setValueAt("<html><font color='red'>Failed</font></html>", i, 7);
