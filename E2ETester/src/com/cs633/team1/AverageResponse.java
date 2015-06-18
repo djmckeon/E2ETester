@@ -12,7 +12,7 @@ public class AverageResponse {
 	private int avgResponse;
 	
 	public AverageResponse() {
-		this.testNum = 0;
+		this.testNum = 1;
 		this.numRuns = 0;
 		this.avgResponse = 0;
 	}
