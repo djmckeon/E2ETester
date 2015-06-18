@@ -36,7 +36,7 @@ public class BarGraph extends JFrame {
       
       final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
       dataset.addValue(successCount, "Success", "Results");
-      dataset.addValue(failedCount, "Failure", "Results");
+      dataset.addValue(failedCount, "Failed", "Results");
       
       barGraph = ChartFactory.createBarChart3D(
          chartTitle,  				// chart title
