@@ -1,5 +1,7 @@
 package com.cs633.team1;
 
+import java.awt.Color;
+
 import javax.swing.JFrame;
 
 import org.jfree.chart.ChartFactory;
@@ -50,6 +52,8 @@ public class BarGraph extends JFrame {
       final CategoryPlot plot = barGraph.getCategoryPlot();
       final CategoryAxis axis = plot.getDomainAxis();
       BarRenderer3D renderer = new BarRenderer3D();
+      renderer.setSeriesPaint(0, new Color(0, 100, 0)); 
+      renderer.setSeriesPaint(1, Color.red); 
       plot.setRenderer(renderer);
       renderer.setDrawBarOutline(false);
 

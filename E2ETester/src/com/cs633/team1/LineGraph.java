@@ -1,5 +1,6 @@
 package com.cs633.team1;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 
 import javax.swing.JFrame;
@@ -57,6 +58,13 @@ public class LineGraph extends JFrame {
       plot.setRenderer(renderer);
       ((NumberAxis)plot.getDomainAxis()).setNumberFormatOverride(new DecimalFormat("0"));  // Display whole numbers on x axis
 
+      if (isTwoLines) {
+          renderer.setSeriesPaint(0, new Color(0, 100,0)); 
+    	  renderer.setSeriesPaint(1, Color.red);
+      } else {
+    	  renderer.setSeriesPaint(0, Color.blue);    	  
+      }
+      
       // X-axis - only include numbers for the items that are being plotted.  Do not autofill the numbers in between.
       NumberAxis domain = (NumberAxis) plot.getDomainAxis();
       domain.setTickUnit(new NumberTickUnit(1));
