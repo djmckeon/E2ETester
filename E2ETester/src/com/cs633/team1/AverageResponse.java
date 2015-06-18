@@ -11,10 +11,22 @@ public class AverageResponse {
 	private int numRuns;
 	private int avgResponse;
 	
+	/**
+	 * Default constructor
+	 */
 	public AverageResponse() {
-		this.testNum = 1;
+		this.testNum = 0;
 		this.numRuns = 0;
 		this.avgResponse = 0;
+	}
+	
+	/**
+	 * Overloaded constructor - set testNum value
+	 * @param testNum
+	 */
+	public AverageResponse(int testNum) {
+		super();
+		this.testNum = testNum;
 	}
 	
 	/**

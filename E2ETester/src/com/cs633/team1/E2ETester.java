@@ -747,11 +747,11 @@ PropertyChangeListener {
 	        			average.calcAverage(Integer.parseInt(model.getValueAt(i, 8).toString()));
 	        			if (model.getValueAt(i, 7).toString().contains("Success")) {
 	        				successList.add(average);
-	        				failedList.add(new AverageResponse());  //Add in a dummy object as a placeholder
+	        				failedList.add(new AverageResponse(i + 1));  //Add in a dummy object as a placeholder
 	        			} 
 	        			if (model.getValueAt(i, 7).toString().contains("Failed")) {
 	        				failedList.add(average);
-	        				successList.add(new AverageResponse());  //Add in a dummy object as a placeholder
+	        				successList.add(new AverageResponse(i + 1));  //Add in a dummy object as a placeholder
 	        			} 
         			}
         		} else {
